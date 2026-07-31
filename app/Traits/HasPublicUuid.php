@@ -2,18 +2,15 @@
 
 namespace App\Traits;
 
-use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 trait HasPublicUuid
 {
-    public static function bootHasPublicUuid(): void
+    use HasUuids;
+
+    public function uniqueIds(): array
     {
-        static::creating(function (Model $model) {
-            if (empty($model->uuid)) {
-                $model->uuid = (string) Str::uuid();
-            }
-        });
+        return ['uuid'];
     }
 
     public function getRouteKeyName(): string

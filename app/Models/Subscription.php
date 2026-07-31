@@ -11,6 +11,7 @@ class Subscription extends Model
     use HasPublicUuid;
 
     protected $hidden = ['id'];
+
     protected $guarded = ['id'];
 
     protected function casts(): array
@@ -21,5 +22,10 @@ class Subscription extends Model
             'ends_at' => 'datetime',
             'paid_at' => 'datetime',
         ];
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

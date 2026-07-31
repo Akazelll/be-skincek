@@ -2,18 +2,21 @@
 
 namespace App\Models;
 
-use App\Traits\HasPublicUuid;
 use App\Enums\ScanMode;
 use App\Enums\SeverityLevel;
+use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class PredictionHistory extends Model
+class PredictionHistory extends Model implements HasMedia
 {
-    use HasPublicUuid;
+    use HasPublicUuid, InteractsWithMedia;
 
     const UPDATED_AT = null;
 
     protected $hidden = ['id'];
+
     protected $guarded = ['id'];
 
     protected $casts = [
@@ -23,4 +26,9 @@ class PredictionHistory extends Model
         'probabilities' => 'array',
         'raw_response' => 'array',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('image')->singleFile();
+    }
 }

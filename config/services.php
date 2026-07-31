@@ -2,6 +2,20 @@
 
 return [
 
+    'ml' => [
+        'url' => env('ML_BASE_URL', 'https://akazelll-face-skin-predict.hf.space'),
+        'timeout' => (int) env('ML_TIMEOUT', 30),
+        'retries' => (int) env('ML_RETRIES', 2),
+    ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'allowed_client_ids' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', env('GOOGLE_ALLOWED_CLIENT_IDS', env('GOOGLE_CLIENT_ID', '')))
+        ))),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

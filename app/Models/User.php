@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasMedia
 {
-    use HasApiTokens, HasFactory, Notifiable, HasPublicUuid, HasRoles, SoftDeletes;
+    use HasApiTokens, HasFactory, HasPublicUuid, HasRoles, InteractsWithMedia, Notifiable, SoftDeletes;
 
     protected $hidden = [
         'id',
@@ -31,5 +33,40 @@ class User extends Authenticatable
             'privacy_consent_at' => 'datetime',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('avatar')->singleFile();
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function predictionHistories()
+    {
+        return $this->hasMany(PredictionHistory::class);
+    }
+
+    public function doctorVerification()
+    {
+        return $this->hasOne(DoctorVerification::class, 'doctor_id');
+    }
+
+    public function skincareProducts()
+    {
+        return $this->hasMany(SkincareProduct::class, 'doctor_id');
+    }
+
+    public function skinRecommendations()
+    {
+        return $this->hasMany(SkinRecommendation::class, 'doctor_id');
+    }
+
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
     }
 }

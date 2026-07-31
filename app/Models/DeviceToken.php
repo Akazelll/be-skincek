@@ -8,15 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class DeviceToken extends Model
 {
-    use HasPublicUuid; 
+    use HasPublicUuid;
 
-    protected $hidden = ['id']; 
-    protected $guarded = ['id']; 
+    protected $hidden = ['id'];
+    protected $guarded = ['id'];
 
     protected function casts(): array
     {
-        return [
-            'platform' => DevicePlatform::class, 
-        ];
+        return ['platform' => DevicePlatform::class];
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
