@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SubscriptionStatus;
 use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -43,6 +44,13 @@ class User extends Authenticatable implements HasMedia
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscriptions()
+            ->where('status', SubscriptionStatus::ACTIVE)
+            ->exists();
     }
 
     public function predictionHistories()

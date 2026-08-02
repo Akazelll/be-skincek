@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\VerificationStatus;
+use App\Events\DoctorVerificationReviewed;
 use App\Http\Resources\DoctorVerificationResource;
 use App\Models\DoctorVerification;
 use Illuminate\Http\Request;
@@ -146,6 +147,8 @@ class DoctorVerificationController extends Controller
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
         ]);
+
+        DoctorVerificationReviewed::dispatch($doctorVerification->fresh());
 
         return new DoctorVerificationResource($doctorVerification->fresh());
     }

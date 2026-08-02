@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\SkinPredictionServiceContract;
 use App\Enums\ScanMode;
 use App\Enums\SeverityLevel;
+use App\Http\Requests\StoreScanRequest;
 use App\Http\Resources\PredictionHistoryResource;
 use App\Models\PredictionHistory;
 use Illuminate\Http\Request;
@@ -15,12 +16,12 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class ScanController extends Controller
 {
-    public function store(Request $request, SkinPredictionServiceContract $service)
+    public function store(StoreScanRequest $request, SkinPredictionServiceContract $service)
     {
         return $this->createPrediction($request, $service, ScanMode::UPLOAD);
     }
 
-    public function storeLivecam(Request $request, SkinPredictionServiceContract $service)
+    public function storeLivecam(StoreScanRequest $request, SkinPredictionServiceContract $service)
     {
         return $this->createPrediction($request, $service, ScanMode::LIVECAM);
     }
@@ -48,11 +49,7 @@ class ScanController extends Controller
 
     private function createPrediction(Request $request, SkinPredictionServiceContract $service, ScanMode $mode)
     {
-        $validated = $request->validate([
-            'image' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
-        ]);
-
-        $result = $service->predict($validated['image']->getRealPath(), $mode === ScanMode::LIVECAM);
+        $result = $service->predict($request->file('image')->getRealPath(), $mode === ScanMode::LIVECAM);
         validator($result, [
             'predicted_class' => ['required', 'string'],
             'confidence' => ['required', 'numeric', 'between:0,1'],
@@ -62,7 +59,7 @@ class ScanController extends Controller
             'model_used' => ['required', 'string'],
         ])->validate();
 
-        $history = DB::transaction(function () use ($request, $validated, $result, $mode) {
+        $history = DB::transaction(function () use ($request, $result, $mode) {
             $history = $request->user()->predictionHistories()->create([
                 'scan_mode' => $mode,
                 'predicted_class' => $result['predicted_class'],
@@ -73,7 +70,7 @@ class ScanController extends Controller
                 'model_used' => $result['model_used'],
                 'raw_response' => $result,
             ]);
-            $history->addMedia($validated['image'])->toMediaCollection('image');
+            $history->addMedia($request->file('image'))->toMediaCollection('image');
 
             return $history;
         });

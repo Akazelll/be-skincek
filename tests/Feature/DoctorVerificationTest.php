@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\VerificationStatus;
+use App\Events\DoctorVerificationReviewed;
 use App\Models\DoctorVerification;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -145,5 +149,35 @@ class DoctorVerificationTest extends TestCase
         $this->postJson('/api/v1/doctor-verification', [
             'specialization' => 'Dermatology',
         ])->assertForbidden();
+    }
+
+    public function test_admin_review_broadcasts_event_to_doctor_channel(): void
+    {
+        Event::fake([DoctorVerificationReviewed::class]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $doctor = User::factory()->create();
+        $doctor->assignRole('doctor');
+
+        $verification = DoctorVerification::create([
+            'doctor_id' => $doctor->id,
+            'specialization' => 'Dermatology',
+            'verification_status' => 'pending',
+            'uuid' => \Str::uuid(),
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/v1/admin/doctor-verifications/{$verification->uuid}", [
+            'status' => 'approved',
+        ])->assertOk();
+
+        Event::assertDispatched(DoctorVerificationReviewed::class, function (DoctorVerificationReviewed $event) use ($doctor) {
+            return $event->broadcastOn()[0] instanceof PrivateChannel
+                && $event->broadcastOn()[0]->name === 'private-user.'.$doctor->uuid
+                && $event->broadcastAs() === 'doctor_verification_reviewed'
+                && $event->broadcastWith()['verification_status'] === 'approved';
+        });
     }
 }

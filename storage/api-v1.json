@@ -57,6 +57,257 @@
                 }
             }
         },
+        "/admin/users": {
+            "get": {
+                "operationId": "admin.listUsers",
+                "tags": [
+                    "Admin"
+                ],
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/users/{user}/role": {
+            "patch": {
+                "operationId": "admin.assignRole",
+                "tags": [
+                    "Admin"
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "description": "The user UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "admin",
+                                            "doctor",
+                                            "user"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "role"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/register": {
             "post": {
                 "operationId": "auth.register",
@@ -485,6 +736,993 @@
                 }
             }
         },
+        "/conversations": {
+            "post": {
+                "operationId": "conversation.store",
+                "tags": [
+                    "Conversation"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "doctor_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "doctor_id"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`ConversationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ConversationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "get": {
+                "operationId": "conversation.index",
+                "tags": [
+                    "Conversation"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `ConversationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "allOf": [
+                                                    {
+                                                        "$ref": "#/components/schemas/ConversationResource"
+                                                    },
+                                                    {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "user",
+                                                            "doctor",
+                                                            "last_message"
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/conversations/{conversation}/messages": {
+            "get": {
+                "operationId": "conversation.messages",
+                "tags": [
+                    "Conversation"
+                ],
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The conversation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `MessageResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MessageResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "conversation.storeMessage",
+                "tags": [
+                    "Conversation"
+                ],
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The conversation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "maxLength": 5000
+                                    }
+                                },
+                                "required": [
+                                    "content"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`MessageResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/MessageResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/device-tokens": {
+            "post": {
+                "operationId": "deviceToken.store",
+                "tags": [
+                    "DeviceToken"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "fcm_token": {
+                                        "type": "string",
+                                        "maxLength": 4096
+                                    },
+                                    "platform": {
+                                        "$ref": "#/components/schemas/DevicePlatform"
+                                    }
+                                },
+                                "required": [
+                                    "fcm_token",
+                                    "platform"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`DeviceTokenResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DeviceTokenResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/device-tokens/{deviceToken}": {
+            "delete": {
+                "operationId": "deviceToken.destroy",
+                "tags": [
+                    "DeviceToken"
+                ],
+                "parameters": [
+                    {
+                        "name": "deviceToken",
+                        "in": "path",
+                        "required": true,
+                        "description": "The device token UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "null"
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string",
+                                                            "const": "Perangkat berhasil dihapus"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/doctor-verification": {
+            "get": {
+                "operationId": "doctorVerification.show",
+                "tags": [
+                    "DoctorVerification"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`DoctorVerificationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DoctorVerificationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Belum ada pengajuan verifikasi"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "doctorVerification.submit",
+                "tags": [
+                    "DoctorVerification"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "str_number": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 50
+                                    },
+                                    "specialization": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "documents": {
+                                        "type": "object"
+                                    }
+                                },
+                                "required": [
+                                    "specialization",
+                                    "documents"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`DoctorVerificationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DoctorVerificationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/doctor-verification/resubmit": {
+            "post": {
+                "operationId": "doctorVerification.resubmit",
+                "tags": [
+                    "DoctorVerification"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "str_number": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 50
+                                    },
+                                    "specialization": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "documents": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`DoctorVerificationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DoctorVerificationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/doctor-verifications": {
+            "get": {
+                "operationId": "doctorVerification.index",
+                "tags": [
+                    "DoctorVerification"
+                ],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `DoctorVerificationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/DoctorVerificationResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/doctor-verifications/{doctorVerification}": {
+            "patch": {
+                "operationId": "doctorVerification.review",
+                "tags": [
+                    "DoctorVerification"
+                ],
+                "parameters": [
+                    {
+                        "name": "doctorVerification",
+                        "in": "path",
+                        "required": true,
+                        "description": "The doctor verification UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "approved",
+                                            "rejected",
+                                            "needs_revision"
+                                        ]
+                                    },
+                                    "rejection_reason": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "revision_note": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "status"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`DoctorVerificationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/DoctorVerificationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/login-activity": {
             "get": {
                 "operationId": "loginActivity.index",
@@ -532,7 +1770,10 @@
                         "required": true,
                         "description": "The personal access token UUID",
                         "schema": {
-                            "type": "integer"
+                            "type": [
+                                "string",
+                                "null"
+                            ]
                         }
                     }
                 ],
@@ -1130,6 +2371,16 @@
                 "tags": [
                     "Scan"
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreScanRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "201": {
                         "description": "`PredictionHistoryResource`",
@@ -1151,6 +2402,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -1161,6 +2415,16 @@
                 "tags": [
                     "Scan"
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreScanRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "201": {
                         "description": "`PredictionHistoryResource`",
@@ -1182,6 +2446,9 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -1230,10 +2497,2345 @@
                     }
                 }
             }
+        },
+        "/skin-concerns": {
+            "get": {
+                "operationId": "skinConcern.index_0",
+                "tags": [
+                    "SkinConcern"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `SkinConcernResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SkinConcernResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/skin-concerns/{skinConcern}": {
+            "get": {
+                "operationId": "skinConcern.show_0",
+                "tags": [
+                    "SkinConcern"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinConcern",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin concern UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SkinConcernResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinConcernResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/admin/skin-concerns": {
+            "get": {
+                "operationId": "skin-concerns.index",
+                "tags": [
+                    "SkinConcern"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `SkinConcernResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SkinConcernResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "skin-concerns.store",
+                "tags": [
+                    "SkinConcern"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "ml_label": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "default_severity_score": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ],
+                                        "minimum": 0,
+                                        "maximum": 100
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "ml_label"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkinConcernResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinConcernResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/skin-concerns/{skinConcern}": {
+            "get": {
+                "operationId": "skin-concerns.show",
+                "tags": [
+                    "SkinConcern"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinConcern",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin concern UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SkinConcernResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinConcernResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "skin-concerns.update",
+                "tags": [
+                    "SkinConcern"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinConcern",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin concern UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "ml_label": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "default_severity_score": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ],
+                                        "minimum": 0,
+                                        "maximum": 100
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkinConcernResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinConcernResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "skin-concerns.destroy",
+                "tags": [
+                    "SkinConcern"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinConcern",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin concern UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "null"
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string",
+                                                            "const": "Skin concern berhasil dihapus"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/recommendations": {
+            "get": {
+                "operationId": "skinRecommendation.index",
+                "tags": [
+                    "SkinRecommendation"
+                ],
+                "parameters": [
+                    {
+                        "name": "ml_label",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "concern_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `SkinRecommendationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SkinRecommendationResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "skinRecommendation.store",
+                "tags": [
+                    "SkinRecommendation"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "concern_id": {
+                                        "type": "integer"
+                                    },
+                                    "product_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "recommendation_text": {
+                                        "type": "string"
+                                    },
+                                    "priority_level": {
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high"
+                                        ]
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "concern_id",
+                                    "title",
+                                    "recommendation_text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkinRecommendationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/SkinRecommendationResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "concern",
+                                                        "product",
+                                                        "doctor"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/recommendations/{skinRecommendation}": {
+            "get": {
+                "operationId": "skinRecommendation.show",
+                "tags": [
+                    "SkinRecommendation"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinRecommendation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin recommendation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SkinRecommendationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/SkinRecommendationResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "concern",
+                                                        "product",
+                                                        "doctor"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "skinRecommendation.update",
+                "tags": [
+                    "SkinRecommendation"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinRecommendation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin recommendation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "concern_id": {
+                                        "type": "integer"
+                                    },
+                                    "product_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "recommendation_text": {
+                                        "type": "string"
+                                    },
+                                    "priority_level": {
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high"
+                                        ]
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkinRecommendationResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/SkinRecommendationResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "concern",
+                                                        "product",
+                                                        "doctor"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "skinRecommendation.destroy",
+                "tags": [
+                    "SkinRecommendation"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinRecommendation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin recommendation UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "null"
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string",
+                                                            "const": "Rekomendasi berhasil dihapus"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/skin-types": {
+            "get": {
+                "operationId": "skinType.index_0",
+                "tags": [
+                    "SkinType"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `SkinTypeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SkinTypeResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/skin-types/{skinType}": {
+            "get": {
+                "operationId": "skinType.show_0",
+                "tags": [
+                    "SkinType"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinType",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin type UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SkinTypeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinTypeResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/admin/skin-types": {
+            "get": {
+                "operationId": "skin-types.index",
+                "tags": [
+                    "SkinType"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `SkinTypeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SkinTypeResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "skin-types.store",
+                "tags": [
+                    "SkinType"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkinTypeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinTypeResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/skin-types/{skinType}": {
+            "get": {
+                "operationId": "skin-types.show",
+                "tags": [
+                    "SkinType"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinType",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin type UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SkinTypeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinTypeResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "skin-types.update",
+                "tags": [
+                    "SkinType"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinType",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin type UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkinTypeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SkinTypeResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "skin-types.destroy",
+                "tags": [
+                    "SkinType"
+                ],
+                "parameters": [
+                    {
+                        "name": "skinType",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skin type UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "null"
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string",
+                                                            "const": "Skin type berhasil dihapus"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/products": {
+            "get": {
+                "operationId": "skincareProduct.index",
+                "tags": [
+                    "SkincareProduct"
+                ],
+                "parameters": [
+                    {
+                        "name": "concern",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "skin_type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `SkincareProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SkincareProductResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "skincareProduct.store",
+                "tags": [
+                    "SkincareProduct"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "concern_id": {
+                                        "type": "integer"
+                                    },
+                                    "skin_type_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "key_ingredients": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "usage_instruction": {
+                                        "type": "string"
+                                    },
+                                    "warning": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "concern_id",
+                                    "name",
+                                    "category",
+                                    "usage_instruction"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkincareProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/SkincareProductResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "concern",
+                                                        "skin_type",
+                                                        "doctor"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/products/{skincareProduct}": {
+            "get": {
+                "operationId": "skincareProduct.show",
+                "tags": [
+                    "SkincareProduct"
+                ],
+                "parameters": [
+                    {
+                        "name": "skincareProduct",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skincare product UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SkincareProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/SkincareProductResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "concern",
+                                                        "skin_type",
+                                                        "doctor"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "skincareProduct.update",
+                "tags": [
+                    "SkincareProduct"
+                ],
+                "parameters": [
+                    {
+                        "name": "skincareProduct",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skincare product UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "concern_id": {
+                                        "type": "integer"
+                                    },
+                                    "skin_type_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "key_ingredients": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "usage_instruction": {
+                                        "type": "string"
+                                    },
+                                    "warning": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`SkincareProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/SkincareProductResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "concern",
+                                                        "skin_type",
+                                                        "doctor"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "skincareProduct.destroy",
+                "tags": [
+                    "SkincareProduct"
+                ],
+                "parameters": [
+                    {
+                        "name": "skincareProduct",
+                        "in": "path",
+                        "required": true,
+                        "description": "The skincare product UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "null"
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string",
+                                                            "const": "Produk berhasil dihapus"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/subscriptions": {
+            "get": {
+                "operationId": "subscription.index",
+                "tags": [
+                    "Subscription"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `SubscriptionResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SubscriptionResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/subscriptions/checkout": {
+            "post": {
+                "operationId": "subscription.checkout",
+                "tags": [
+                    "Subscription"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "snap_token": {
+                                                    "type": "string"
+                                                },
+                                                "redirect_url": {
+                                                    "type": "string"
+                                                },
+                                                "subscription": {
+                                                    "$ref": "#/components/schemas/SubscriptionResource"
+                                                }
+                                            },
+                                            "required": [
+                                                "snap_token",
+                                                "redirect_url",
+                                                "subscription"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string",
+                                                            "const": "Transaksi pembayaran berhasil dibuat"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "502": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Gagal membuat transaksi pembayaran, coba lagi nanti"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Kamu sudah berlangganan SkinCek Pro"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscription}/receipt": {
+            "get": {
+                "operationId": "subscription.receipt",
+                "tags": [
+                    "Subscription"
+                ],
+                "parameters": [
+                    {
+                        "name": "subscription",
+                        "in": "path",
+                        "required": true,
+                        "description": "The subscription UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`SubscriptionResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SubscriptionResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/webhooks/midtrans": {
+            "post": {
+                "operationId": "webhook.handleMidtrans",
+                "tags": [
+                    "Webhook"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "order_id": {
+                                        "type": "string"
+                                    },
+                                    "status_code": {
+                                        "type": "string"
+                                    },
+                                    "gross_amount": {
+                                        "type": "string"
+                                    },
+                                    "transaction_status": {
+                                        "type": "string"
+                                    },
+                                    "fraud_status": {
+                                        "type": "string"
+                                    },
+                                    "transaction_id": {
+                                        "type": "string"
+                                    },
+                                    "payment_type": {
+                                        "type": "string"
+                                    },
+                                    "signature_key": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "order_id",
+                                    "status_code",
+                                    "gross_amount",
+                                    "transaction_status"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "null"
+                                        },
+                                        "meta": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "message": {
+                                                            "type": "string",
+                                                            "const": "ok"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "message"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Invalid signature"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
+            "ConversationResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "doctor": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "message_count": {
+                        "type": "integer"
+                    },
+                    "last_message": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MessageResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "message_count",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "ConversationResource"
+            },
+            "DevicePlatform": {
+                "type": "string",
+                "enum": [
+                    "ios",
+                    "android",
+                    "web"
+                ],
+                "title": "DevicePlatform"
+            },
+            "DeviceTokenResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "fcm_token": {
+                        "type": "string"
+                    },
+                    "platform": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "fcm_token",
+                    "platform",
+                    "created_at"
+                ],
+                "title": "DeviceTokenResource"
+            },
+            "DoctorVerificationResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "str_number": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "specialization": {
+                        "type": "string"
+                    },
+                    "verification_status": {
+                        "type": "string"
+                    },
+                    "rejection_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "revision_note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "documents": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "uuid": {
+                                    "type": "string"
+                                },
+                                "url": {
+                                    "type": "string"
+                                },
+                                "file_name": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "uuid",
+                                "url",
+                                "file_name"
+                            ]
+                        }
+                    },
+                    "reviewed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "str_number",
+                    "specialization",
+                    "verification_status",
+                    "rejection_reason",
+                    "revision_note",
+                    "documents",
+                    "reviewed_at",
+                    "created_at"
+                ],
+                "title": "DoctorVerificationResource"
+            },
             "LoginActivityResource": {
                 "type": "object",
                 "properties": {
@@ -1275,6 +4877,52 @@
                     "created_at"
                 ],
                 "title": "LoginActivityResource"
+            },
+            "MessageResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "sender": {
+                        "type": "object",
+                        "properties": {
+                            "uuid": {
+                                "type": "string"
+                            },
+                            "full_name": {
+                                "type": "string"
+                            },
+                            "role": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "uuid",
+                            "full_name",
+                            "role"
+                        ]
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "sender",
+                    "content",
+                    "created_at"
+                ],
+                "title": "MessageResource"
             },
             "PredictionHistoryResource": {
                 "type": "object",
@@ -1327,6 +4975,265 @@
                     "created_at"
                 ],
                 "title": "PredictionHistoryResource"
+            },
+            "SkinConcernResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "ml_label": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "default_severity_score": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "name",
+                    "ml_label",
+                    "description",
+                    "default_severity_score",
+                    "is_active"
+                ],
+                "title": "SkinConcernResource"
+            },
+            "SkinRecommendationResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "recommendation_text": {
+                        "type": "string"
+                    },
+                    "priority_level": {
+                        "type": "string"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "concern": {
+                        "$ref": "#/components/schemas/SkinConcernResource"
+                    },
+                    "product": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SkincareProductResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "doctor": {
+                        "$ref": "#/components/schemas/UserResource"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "title",
+                    "recommendation_text",
+                    "priority_level",
+                    "is_active",
+                    "created_at"
+                ],
+                "title": "SkinRecommendationResource"
+            },
+            "SkinTypeResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "name",
+                    "description",
+                    "is_active"
+                ],
+                "title": "SkinTypeResource"
+            },
+            "SkincareProductResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string"
+                    },
+                    "key_ingredients": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "usage_instruction": {
+                        "type": "string"
+                    },
+                    "warning": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "concern": {
+                        "$ref": "#/components/schemas/SkinConcernResource"
+                    },
+                    "skin_type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SkinTypeResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "doctor": {
+                        "$ref": "#/components/schemas/UserResource"
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "name",
+                    "category",
+                    "key_ingredients",
+                    "usage_instruction",
+                    "warning",
+                    "is_active"
+                ],
+                "title": "SkincareProductResource"
+            },
+            "StoreScanRequest": {
+                "type": "object",
+                "properties": {
+                    "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 5120 kilobytes."
+                    }
+                },
+                "required": [
+                    "image"
+                ],
+                "title": "StoreScanRequest"
+            },
+            "SubscriptionResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "plan_code": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "integer"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "payment_method": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "midtrans_order_id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "starts_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "ends_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "paid_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "plan_code",
+                    "status",
+                    "amount",
+                    "currency",
+                    "payment_method",
+                    "midtrans_order_id",
+                    "starts_at",
+                    "ends_at",
+                    "paid_at",
+                    "created_at"
+                ],
+                "title": "SubscriptionResource"
             },
             "User": {
                 "type": "object",
@@ -1391,6 +5298,44 @@
                     "deleted_at"
                 ],
                 "title": "User"
+            },
+            "UserResource": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "full_name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "full_name",
+                    "email",
+                    "role",
+                    "is_active",
+                    "created_at"
+                ],
+                "title": "UserResource"
             }
         },
         "responses": {
@@ -1424,8 +5369,8 @@
                     }
                 }
             },
-            "AuthenticationException": {
-                "description": "Unauthenticated",
+            "ModelNotFoundException": {
+                "description": "Not found",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1443,8 +5388,8 @@
                     }
                 }
             },
-            "ModelNotFoundException": {
-                "description": "Not found",
+            "AuthenticationException": {
+                "description": "Unauthenticated",
                 "content": {
                     "application/json": {
                         "schema": {

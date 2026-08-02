@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\DoctorVerificationController;
 use App\Http\Controllers\LoginActivityController;
 use App\Http\Controllers\PasswordResetController;
@@ -12,6 +14,7 @@ use App\Http\Controllers\SkinConcernController;
 use App\Http\Controllers\SkinRecommendationController;
 use App\Http\Controllers\SkinTypeController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => response()->json([
@@ -41,6 +44,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:password-reset');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
 
+    Route::post('/webhooks/midtrans', [WebhookController::class, 'handleMidtrans']);
+
     // Catalog (public read)
     Route::get('/skin-concerns', [SkinConcernController::class, 'index']);
     Route::get('/skin-concerns/{skinConcern}', [SkinConcernController::class, 'show']);
@@ -64,12 +69,21 @@ Route::prefix('v1')->group(function () {
         Route::delete('/login-activity/{personalAccessToken}', [LoginActivityController::class, 'destroy']);
 
         Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+        Route::post('/subscriptions/checkout', [SubscriptionController::class, 'checkout']);
         Route::get('/subscriptions/{subscription}/receipt', [SubscriptionController::class, 'receipt']);
 
         Route::get('/scans', [ScanController::class, 'index']);
         Route::post('/scans', [ScanController::class, 'store']);
         Route::post('/scans/livecam', [ScanController::class, 'storeLivecam']);
         Route::get('/scans/{predictionHistory}', [ScanController::class, 'show']);
+
+        Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+        Route::delete('/device-tokens/{deviceToken}', [DeviceTokenController::class, 'destroy']);
+
+        Route::post('/conversations', [ConversationController::class, 'store']);
+        Route::get('/conversations', [ConversationController::class, 'index']);
+        Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
+        Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'storeMessage']);
 
         // Doctor verification
         Route::middleware('role:doctor')->group(function () {
