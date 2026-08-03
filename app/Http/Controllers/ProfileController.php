@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DoctorVerification;
+use App\Support\MediaHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -18,7 +19,7 @@ class ProfileController extends Controller
             'full_name' => $user->full_name,
             'email' => $user->email,
             'role' => $role,
-            'avatar_url' => $user->getFirstMediaUrl('avatar'),
+            'avatar_url' => MediaHelper::url($user->getFirstMedia('avatar')),
         ];
 
         if ($role === 'user') {
@@ -64,7 +65,7 @@ class ProfileController extends Controller
         return $this->successResponse([
             'uuid' => $user->uuid,
             'full_name' => $user->full_name,
-            'avatar_url' => $user->getFirstMediaUrl('avatar'),
+            'avatar_url' => MediaHelper::url($user->getFirstMedia('avatar')),
         ], ['message' => 'Profil berhasil diperbarui']);
     }
 
@@ -74,6 +75,12 @@ class ProfileController extends Controller
 
         $user->tokens()->delete();
         $user->delete();
+
+        activity()
+            ->useLog('account_deletion')
+            ->performedOn($user)
+            ->causedBy($user)
+            ->log('Account deletion requested (soft delete)');
 
         return $this->successResponse(null, ['message' => 'Akun berhasil dihapus']);
     }

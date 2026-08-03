@@ -27,6 +27,8 @@ class SkinRecommendationController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless($request->user()->isVerifiedDoctor(), 403, 'Dokter harus terverifikasi terlebih dahulu');
+
         $validated = $request->validate([
             'concern_id' => ['required', 'exists:skin_concerns,id'],
             'product_id' => ['nullable', 'exists:skincare_products,id'],

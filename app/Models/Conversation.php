@@ -10,6 +10,7 @@ class Conversation extends Model
     use HasPublicUuid;
 
     protected $hidden = ['id'];
+
     protected $guarded = ['id'];
 
     public function user()

@@ -29,6 +29,7 @@ class PredictionHistory extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('image')->singleFile();
+        $this->addMediaCollection('scan-photo')->singleFile();
+        $this->addMediaCollection('scan-photo-cropped')->singleFile();
     }
 }

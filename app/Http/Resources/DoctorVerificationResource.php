@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\MediaHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,9 +17,9 @@ class DoctorVerificationResource extends JsonResource
             'verification_status' => $this->verification_status->value,
             'rejection_reason' => $this->rejection_reason,
             'revision_note' => $this->revision_note,
-            'documents' => $this->getMedia('documents')->map(fn ($media) => [
+            'documents' => $this->getMedia('verification-document')->map(fn ($media) => [
                 'uuid' => $media->uuid,
-                'url' => $media->getUrl(),
+                'url' => MediaHelper::url($media),
                 'file_name' => $media->file_name,
             ]),
             'reviewed_at' => $this->reviewed_at?->toISOString(),

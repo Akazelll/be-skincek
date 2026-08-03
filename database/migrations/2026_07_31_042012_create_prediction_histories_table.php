@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->string('scan_mode'); 
+            $table->string('scan_mode');
             $table->string('predicted_class');
             $table->decimal('confidence', 5, 4);
             $table->json('probabilities');

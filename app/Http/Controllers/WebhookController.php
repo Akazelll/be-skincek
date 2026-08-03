@@ -27,7 +27,7 @@ class WebhookController extends Controller
 
         $signature = $request->header('X-Signature-Key') ?? ($payload['signature_key'] ?? '');
 
-        if ($signature === '' || !$midtrans->verifySignature($signature, $payload)) {
+        if ($signature === '' || ! $midtrans->verifySignature($signature, $payload)) {
             return $this->errorResponse('Invalid signature', 403);
         }
 

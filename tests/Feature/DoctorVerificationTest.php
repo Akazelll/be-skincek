@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\VerificationStatus;
 use App\Events\DoctorVerificationReviewed;
 use App\Models\DoctorVerification;
 use App\Models\User;
@@ -12,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -55,7 +55,7 @@ class DoctorVerificationTest extends TestCase
             'doctor_id' => $doctor->id,
             'specialization' => 'Dermatology',
             'verification_status' => 'pending',
-            'uuid' => \Str::uuid(),
+            'uuid' => Str::uuid(),
         ]);
         Sanctum::actingAs($doctor);
 
@@ -75,7 +75,7 @@ class DoctorVerificationTest extends TestCase
             'doctor_id' => $doctor->id,
             'specialization' => 'Dermatology',
             'verification_status' => 'pending',
-            'uuid' => \Str::uuid(),
+            'uuid' => Str::uuid(),
         ]);
 
         Sanctum::actingAs($admin);
@@ -100,7 +100,7 @@ class DoctorVerificationTest extends TestCase
             'doctor_id' => $doctor->id,
             'specialization' => 'Dermatology',
             'verification_status' => 'pending',
-            'uuid' => \Str::uuid(),
+            'uuid' => Str::uuid(),
         ]);
 
         Sanctum::actingAs($admin);
@@ -129,7 +129,7 @@ class DoctorVerificationTest extends TestCase
             'doctor_id' => $doctor->id,
             'specialization' => 'Dermatology',
             'verification_status' => 'approved',
-            'uuid' => \Str::uuid(),
+            'uuid' => Str::uuid(),
         ]);
 
         Sanctum::actingAs($admin);
@@ -164,7 +164,7 @@ class DoctorVerificationTest extends TestCase
             'doctor_id' => $doctor->id,
             'specialization' => 'Dermatology',
             'verification_status' => 'pending',
-            'uuid' => \Str::uuid(),
+            'uuid' => Str::uuid(),
         ]);
 
         Sanctum::actingAs($admin);

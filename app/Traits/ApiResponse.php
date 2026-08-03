@@ -10,7 +10,7 @@ trait ApiResponse
     {
         return response()->json([
             'data' => $data,
-            'meta' => empty($meta) ? (object)[] : $meta,
+            'meta' => empty($meta) ? (object) [] : $meta,
         ], $statusCode);
     }
 
@@ -18,7 +18,7 @@ trait ApiResponse
     {
         $response = ['message' => $message];
 
-        if (!is_null($errors)) {
+        if (! is_null($errors)) {
             $response['errors'] = $errors;
         }
 

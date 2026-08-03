@@ -27,7 +27,7 @@ Route::get('/', fn () => response()->json([
     'meta' => (object) [],
 ]));
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::get('/', fn () => response()->json([
         'data' => [
             'name' => config('app.name'),
@@ -38,11 +38,11 @@ Route::prefix('v1')->group(function () {
     ]));
 
     // Public routes
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
     Route::post('/auth/google', [AuthController::class, 'google'])->middleware('throttle:google-auth');
-    Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:password-reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot-password');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:reset-password');
 
     Route::post('/webhooks/midtrans', [WebhookController::class, 'handleMidtrans']);
 
@@ -53,8 +53,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/skin-types/{skinType}', [SkinTypeController::class, 'show']);
     Route::get('/products', [SkincareProductController::class, 'index']);
     Route::get('/products/{skincareProduct}', [SkincareProductController::class, 'show']);
+    Route::get('/skincare-products', [SkincareProductController::class, 'index']);
+    Route::get('/skincare-products/{skincareProduct}', [SkincareProductController::class, 'show']);
     Route::get('/recommendations', [SkinRecommendationController::class, 'index']);
     Route::get('/recommendations/{skinRecommendation}', [SkinRecommendationController::class, 'show']);
+    Route::get('/skin-recommendations', [SkinRecommendationController::class, 'index']);
+    Route::get('/skin-recommendations/{skinRecommendation}', [SkinRecommendationController::class, 'show']);
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -73,8 +77,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/subscriptions/{subscription}/receipt', [SubscriptionController::class, 'receipt']);
 
         Route::get('/scans', [ScanController::class, 'index']);
-        Route::post('/scans', [ScanController::class, 'store']);
-        Route::post('/scans/livecam', [ScanController::class, 'storeLivecam']);
+        Route::post('/scans', [ScanController::class, 'store'])->middleware('throttle:scans');
+        Route::post('/scans/livecam', [ScanController::class, 'storeLivecam'])->middleware('throttle:scans');
         Route::get('/scans/{predictionHistory}', [ScanController::class, 'show']);
 
         Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
@@ -90,17 +94,24 @@ Route::prefix('v1')->group(function () {
             Route::get('/doctor-verification', [DoctorVerificationController::class, 'show']);
             Route::post('/doctor-verification', [DoctorVerificationController::class, 'submit']);
             Route::post('/doctor-verification/resubmit', [DoctorVerificationController::class, 'resubmit']);
+            Route::get('/doctor/verification', [DoctorVerificationController::class, 'show']);
+            Route::post('/doctor/verification', [DoctorVerificationController::class, 'submit']);
+            Route::post('/doctor/verification/resubmit', [DoctorVerificationController::class, 'resubmit']);
         });
 
         // Admin routes
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/users', [AdminController::class, 'listUsers']);
             Route::patch('/admin/users/{user}/role', [AdminController::class, 'assignRole']);
+            Route::get('/admin/activity-log', [AdminController::class, 'activityLog']);
             Route::get('/admin/doctor-verifications', [DoctorVerificationController::class, 'index']);
             Route::patch('/admin/doctor-verifications/{doctorVerification}', [DoctorVerificationController::class, 'review']);
+            Route::get('/admin/verifications', [DoctorVerificationController::class, 'index']);
+            Route::patch('/admin/verifications/{doctorVerification}', [DoctorVerificationController::class, 'review']);
 
             Route::apiResource('admin/skin-concerns', SkinConcernController::class);
             Route::apiResource('admin/skin-types', SkinTypeController::class);
+            Route::get('/admin/skincare-products', [SkincareProductController::class, 'adminIndex']);
         });
 
         // Product & recommendation management (doctor)

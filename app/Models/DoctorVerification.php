@@ -27,7 +27,7 @@ class DoctorVerification extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('documents');
+        $this->addMediaCollection('verification-document');
     }
 
     public function doctor()

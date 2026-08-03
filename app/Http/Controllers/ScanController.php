@@ -70,7 +70,9 @@ class ScanController extends Controller
                 'model_used' => $result['model_used'],
                 'raw_response' => $result,
             ]);
-            $history->addMedia($request->file('image'))->toMediaCollection('image');
+
+            $collection = $mode === ScanMode::LIVECAM ? 'scan-photo-cropped' : 'scan-photo';
+            $history->addMedia($request->file('image'))->toMediaCollection($collection);
 
             return $history;
         });

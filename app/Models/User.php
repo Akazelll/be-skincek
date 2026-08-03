@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
+use App\Enums\VerificationStatus;
 use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -61,6 +62,11 @@ class User extends Authenticatable implements HasMedia
     public function doctorVerification()
     {
         return $this->hasOne(DoctorVerification::class, 'doctor_id');
+    }
+
+    public function isVerifiedDoctor(): bool
+    {
+        return $this->doctorVerification?->verification_status === VerificationStatus::APPROVED;
     }
 
     public function skincareProducts()

@@ -11,6 +11,7 @@ class DeviceToken extends Model
     use HasPublicUuid;
 
     protected $hidden = ['id'];
+
     protected $guarded = ['id'];
 
     protected function casts(): array

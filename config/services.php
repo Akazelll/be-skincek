@@ -3,6 +3,7 @@
 return [
 
     'ml' => [
+        'driver' => env('ML_DRIVER', 'http'),
         'url' => env('ML_BASE_URL', 'https://akazelll-face-skin-predict.hf.space'),
         'timeout' => (int) env('ML_TIMEOUT', 30),
         'retries' => (int) env('ML_RETRIES', 2),

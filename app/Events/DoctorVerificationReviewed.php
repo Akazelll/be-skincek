@@ -14,9 +14,7 @@ class DoctorVerificationReviewed implements ShouldBroadcast
     use Dispatchable;
     use SerializesModels;
 
-    public function __construct(public DoctorVerification $doctorVerification)
-    {
-    }
+    public function __construct(public DoctorVerification $doctorVerification) {}
 
     public function broadcastOn(): array
     {

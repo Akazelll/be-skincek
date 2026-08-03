@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('doctor_id')->constrained('users')->cascadeOnDelete();
             $table->string('title');
             $table->text('recommendation_text');
-            $table->string('priority_level')->default('medium'); 
+            $table->string('priority_level')->default('medium');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

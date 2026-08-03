@@ -22,6 +22,8 @@ class SkincareProductController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless($request->user()->isVerifiedDoctor(), 403, 'Dokter harus terverifikasi terlebih dahulu');
+
         $validated = $request->validate([
             'concern_id' => ['required', 'exists:skin_concerns,id'],
             'skin_type_id' => ['nullable', 'exists:skin_types,id'],
@@ -40,6 +42,13 @@ class SkincareProductController extends Controller
     public function show(SkincareProduct $skincareProduct)
     {
         return new SkincareProductResource($skincareProduct->load(['concern', 'skinType', 'doctor']));
+    }
+
+    public function adminIndex()
+    {
+        $products = SkincareProduct::with(['concern', 'skinType', 'doctor'])->latest()->paginate(15);
+
+        return SkincareProductResource::collection($products);
     }
 
     public function update(Request $request, SkincareProduct $skincareProduct)

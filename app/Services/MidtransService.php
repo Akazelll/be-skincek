@@ -25,9 +25,9 @@ class MidtransService
         $expected = hash(
             'sha512',
             ($payload['order_id'] ?? '')
-            . ($payload['status_code'] ?? '')
-            . ($payload['gross_amount'] ?? '')
-            . (string) config('services.midtrans.server_key')
+            .($payload['status_code'] ?? '')
+            .($payload['gross_amount'] ?? '')
+            .(string) config('services.midtrans.server_key')
         );
 
         return hash_equals($expected, $signature);

@@ -61,7 +61,7 @@ class DoctorVerificationController extends Controller
                     'reviewed_by' => null,
                     'reviewed_at' => null,
                 ]);
-                $existing->clearMediaCollection('documents');
+                $existing->clearMediaCollection('verification-document');
                 $verification = $existing;
             } else {
                 $verification = $user->doctorVerification()->create([
@@ -73,7 +73,7 @@ class DoctorVerificationController extends Controller
 
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $file) {
-                    $verification->addMedia($file)->toMediaCollection('documents');
+                    $verification->addMedia($file)->toMediaCollection('verification-document');
                 }
             }
 
@@ -112,9 +112,9 @@ class DoctorVerificationController extends Controller
             $verification->update($update);
 
             if ($request->hasFile('documents')) {
-                $verification->clearMediaCollection('documents');
+                $verification->clearMediaCollection('verification-document');
                 foreach ($request->file('documents') as $file) {
-                    $verification->addMedia($file)->toMediaCollection('documents');
+                    $verification->addMedia($file)->toMediaCollection('verification-document');
                 }
             }
         });
@@ -149,6 +149,17 @@ class DoctorVerificationController extends Controller
         ]);
 
         DoctorVerificationReviewed::dispatch($doctorVerification->fresh());
+
+        activity()
+            ->useLog('doctor_verification_review')
+            ->performedOn($doctorVerification)
+            ->causedBy($request->user())
+            ->withProperties([
+                'verification_status' => $status->value,
+                'rejection_reason' => $doctorVerification->rejection_reason,
+                'revision_note' => $doctorVerification->revision_note,
+            ])
+            ->log('Doctor verification reviewed');
 
         return new DoctorVerificationResource($doctorVerification->fresh());
     }

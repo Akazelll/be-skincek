@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\MediaHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +19,9 @@ class PredictionHistoryResource extends JsonResource
             'severity_score' => $this->severity_score,
             'severity_level' => $this->severity_level->value,
             'model_used' => $this->model_used,
-            'image_url' => $this->getFirstMediaUrl('image'),
+            'image_url' => MediaHelper::url(
+                $this->getFirstMedia('scan-photo') ?? $this->getFirstMedia('scan-photo-cropped')
+            ),
             'created_at' => $this->created_at?->toISOString(),
         ];
     }

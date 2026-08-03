@@ -49,8 +49,16 @@ class RecommendationTest extends TestCase
 
     public function test_doctor_can_create_recommendation(): void
     {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
         $doctor = User::factory()->create();
         $doctor->assignRole('doctor');
+        $doctor->doctorVerification()->create([
+            'specialization' => 'Dermatology',
+            'verification_status' => 'approved',
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+        ]);
         $concern = SkinConcern::create(['name' => 'Acne', 'ml_label' => 'acne']);
         Sanctum::actingAs($doctor);
 
