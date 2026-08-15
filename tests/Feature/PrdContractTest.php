@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\SkinConcern;
+use App\Models\SkinType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -43,14 +44,14 @@ class PrdContractTest extends TestCase
         $this->getJson('/api/v1/admin/users')->assertOk();
 
         Sanctum::actingAs($doctor);
-        $this->getJson('/api/v1/doctor/verification')->assertStatus(404);
-        $this->post('/api/v1/doctor/verification', [
+        $this->getJson('/api/v1/doctor-verifications')->assertStatus(404);
+        $this->post('/api/v1/doctor-verifications', [
             'str_number' => 'STR-2026-0001',
             'specialization' => 'Dermatologi',
             'documents' => [UploadedFile::fake()->image('sertif.png')],
         ], ['Accept' => 'application/json'])->assertCreated();
         $doctor->unsetRelation('doctorVerification');
-        $this->getJson('/api/v1/doctor/verification')->assertOk();
+        $this->getJson('/api/v1/doctor-verifications')->assertOk();
     }
 
     public function test_doctor_must_be_verified_to_publish_products_and_recommendations(): void
@@ -63,13 +64,13 @@ class PrdContractTest extends TestCase
         $doctor->assignRole('doctor');
 
         Sanctum::actingAs($doctor);
-        $this->postJson('/api/v1/products', [
+        $this->postJson('/api/v1/skincare-products', [
             'concern_id' => $concern->id,
             'name' => 'Test Cream',
             'category' => 'Moisturizer',
             'usage_instruction' => 'Oles tipis.',
         ])->assertForbidden();
-        $this->postJson('/api/v1/recommendations', [
+        $this->postJson('/api/v1/skin-recommendations', [
             'concern_id' => $concern->id,
             'title' => 'Rekomendasi',
             'description' => 'Test',
@@ -83,7 +84,7 @@ class PrdContractTest extends TestCase
         ]);
         $doctor->unsetRelation('doctorVerification');
 
-        $this->postJson('/api/v1/products', [
+        $this->postJson('/api/v1/skincare-products', [
             'concern_id' => $concern->id,
             'name' => 'Test Cream',
             'category' => 'Moisturizer',
@@ -93,10 +94,44 @@ class PrdContractTest extends TestCase
 
     public function test_catalog_is_public_without_authentication(): void
     {
-        $this->getJson('/api/v1/skin-concerns')->assertOk();
-        $this->getJson('/api/v1/skin-types')->assertOk();
         $this->getJson('/api/v1/skincare-products')->assertOk();
         $this->getJson('/api/v1/skin-recommendations')->assertOk();
+        $this->getJson('/api/v1/skin-concerns')->assertOk();
+        $this->getJson('/api/v1/skin-types')->assertOk();
+    }
+
+    public function test_admin_manages_skin_concerns_and_types_on_prd_paths(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        Sanctum::actingAs($user);
+        $this->postJson('/api/v1/skin-concerns', ['name' => 'Jerawat', 'ml_label' => 'acne'])->assertForbidden();
+        $this->postJson('/api/v1/skin-types', ['name' => 'Kulit Berminyak'])->assertForbidden();
+
+        Sanctum::actingAs($admin);
+        $concern = $this->postJson('/api/v1/skin-concerns', ['name' => 'Jerawat', 'ml_label' => 'acne'])
+            ->assertCreated()
+            ->json('data');
+        $this->postJson('/api/v1/skin-types', ['name' => 'Kulit Berminyak'])->assertCreated();
+
+        $this->patchJson("/api/v1/skin-concerns/{$concern['uuid']}", ['is_active' => false])->assertOk();
+        $this->deleteJson("/api/v1/skin-concerns/{$concern['uuid']}")->assertOk();
+    }
+
+    public function test_public_catalog_only_lists_active_concerns_and_types(): void
+    {
+        SkinConcern::create(['name' => 'Eksim', 'ml_label' => 'eczema', 'is_active' => false]);
+        SkinType::create(['name' => 'Kering', 'is_active' => false]);
+
+        $this->getJson('/api/v1/skin-concerns')
+            ->assertOk()
+            ->assertJsonMissing(['name' => 'Eksim']);
+        $this->getJson('/api/v1/skin-types')
+            ->assertOk()
+            ->assertJsonMissing(['name' => 'Kering']);
     }
 
     public function test_account_deletion_right_to_erasure(): void

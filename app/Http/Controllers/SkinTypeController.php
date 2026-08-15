@@ -9,10 +9,13 @@ use Illuminate\Validation\Rule;
 
 class SkinTypeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         return SkinTypeResource::collection(
-            SkinType::where('is_active', true)->orderBy('name')->get()
+            SkinType::query()
+                ->when(! $request->user()?->hasRole('admin'), fn ($q) => $q->where('is_active', true))
+                ->orderBy('name')
+                ->get()
         );
     }
 

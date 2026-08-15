@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\IpLocationResolverContract;
 use App\Http\Resources\LoginActivityResource;
 use App\Models\PersonalAccessToken;
 use Illuminate\Http\Request;
 
 class LoginActivityController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, IpLocationResolverContract $resolver)
     {
+        $tokens = $request->user()->tokens()->latest('last_used_at')->latest()->get();
+
         return LoginActivityResource::collection(
-            $request->user()->tokens()->latest('last_used_at')->latest()->get()
+            $tokens->map(fn ($token) => new LoginActivityResource($token, $resolver->resolve($token->ip_address)))
         );
     }
 

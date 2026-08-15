@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\VerificationStatus;
+use App\Events\MessageSent;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
@@ -97,6 +98,8 @@ class ConversationController extends Controller
 
             return $message;
         });
+
+        MessageSent::dispatch($message->load('sender'));
 
         return (new MessageResource($message->load('sender')))->response()->setStatusCode(201);
     }

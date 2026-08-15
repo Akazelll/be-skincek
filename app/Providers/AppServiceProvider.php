@@ -3,10 +3,14 @@
 namespace App\Providers;
 
 use App\Contracts\GoogleTokenVerifierContract;
+use App\Contracts\IpLocationResolverContract;
+use App\Contracts\PushNotificationServiceContract;
 use App\Contracts\SkinPredictionServiceContract;
 use App\Models\PersonalAccessToken;
+use App\Services\FcmPushNotificationService;
 use App\Services\GoogleTokenVerifier;
 use App\Services\HttpSkinPredictionService;
+use App\Services\IpApiLocationResolver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,12 +26,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(GoogleTokenVerifierContract::class, GoogleTokenVerifier::class);
 
+        $this->app->bind(IpLocationResolverContract::class, match (config('services.ip_location.driver', 'ip-api')) {
+            'ip-api' => IpApiLocationResolver::class,
+            default => IpApiLocationResolver::class,
+        });
+
         $mlDriver = (string) config('services.ml.driver', 'http');
 
         $this->app->bind(SkinPredictionServiceContract::class, match ($mlDriver) {
             'http' => HttpSkinPredictionService::class,
             default => HttpSkinPredictionService::class,
         });
+
+        $this->app->bind(PushNotificationServiceContract::class, FcmPushNotificationService::class);
     }
 
     /**

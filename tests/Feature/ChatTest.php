@@ -3,14 +3,18 @@
 namespace Tests\Feature;
 
 use App\Enums\VerificationStatus;
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\DoctorVerification;
 use App\Models\Message;
 use App\Models\Subscription;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Broadcasting\BroadcastEvent;
+use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -251,5 +255,74 @@ class ChatTest extends TestCase
 
         $stored = DB::table('messages')->first()->content;
         $this->assertNotSame('rahasia kulitku', $stored);
+    }
+
+    public function test_message_sent_event_broadcasts_on_conversation_channel(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+
+        $this->sendMessage($user, $conversation, 'hai dokter')->assertCreated();
+
+        Queue::assertPushed(BroadcastEvent::class, function (BroadcastEvent $job) use ($conversation) {
+            $event = $job->event;
+
+            return $event instanceof MessageSent
+                && $event->broadcastOn()[0]->name === 'private-conversation.'.$conversation->uuid
+                && $event->broadcastAs() === 'chat_message_received'
+                && $event->broadcastWith()['message']['content'] === 'hai dokter';
+        });
+    }
+
+    public function test_conversation_channel_authorizes_only_participants(): void
+    {
+        config()->set('broadcasting.default', 'pusher');
+        config()->set('broadcasting.connections.pusher', [
+            'driver' => 'pusher',
+            'key' => 'test-key',
+            'secret' => 'test-secret',
+            'app_id' => 'test-app-id',
+            'options' => ['cluster' => 'mt1'],
+            'client_options' => [],
+        ]);
+        app(BroadcastManager::class)->purge('pusher');
+        require base_path('routes/channels.php');
+
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+        $stranger = User::factory()->create();
+        $stranger->assignRole('user');
+
+        $channelName = 'private-conversation.'.$conversation->uuid;
+
+        Sanctum::actingAs($user);
+        $this->postJson('/broadcasting/auth', [
+            'channel_name' => $channelName,
+            'socket_id' => '1234.5678',
+        ])->assertOk();
+
+        Sanctum::actingAs($doctor);
+        $this->postJson('/broadcasting/auth', [
+            'channel_name' => $channelName,
+            'socket_id' => '1234.5678',
+        ])->assertOk();
+
+        Sanctum::actingAs($stranger);
+        $this->postJson('/broadcasting/auth', [
+            'channel_name' => $channelName,
+            'socket_id' => '1234.5678',
+        ])->assertForbidden();
     }
 }

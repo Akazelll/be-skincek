@@ -60,7 +60,7 @@ class ActivityLogTest extends TestCase
 
         Sanctum::actingAs($admin);
 
-        $this->patchJson("/api/v1/admin/doctor-verifications/{$verification->uuid}", [
+        $this->patchJson("/api/v1/doctor-verifications/{$verification->uuid}/review", [
             'status' => 'approved',
         ])->assertOk();
 

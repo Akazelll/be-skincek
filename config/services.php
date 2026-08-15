@@ -24,6 +24,19 @@ return [
         'expiry_duration' => (int) env('MIDTRANS_EXPIRY_DURATION', 1440),
     ],
 
+    'ip_location' => [
+        'driver' => env('IP_LOCATION_DRIVER', 'ip-api'),
+        'cache_ttl' => (int) env('IP_LOCATION_CACHE_TTL', 86400),
+        'limit_per_minute' => (int) env('IP_LOCATION_LIMIT_PER_MINUTE', 45),
+    ],
+
+    'fcm' => [
+        'enabled' => (bool) env('FCM_ENABLED', false),
+        'project_id' => env('FCM_PROJECT_ID'),
+        'credentials_json' => env('FCM_CREDENTIALS_JSON'),
+        'api_url' => env('FCM_API_URL', 'https://fcm.googleapis.com/v1/projects/%s/messages:send'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

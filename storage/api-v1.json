@@ -1482,7 +1482,7 @@
                 }
             }
         },
-        "/doctor-verification": {
+        "/doctor-verifications": {
             "get": {
                 "operationId": "doctorVerification.show",
                 "tags": [
@@ -1598,11 +1598,21 @@
                 }
             }
         },
-        "/doctor-verification/resubmit": {
+        "/doctor-verifications/{doctorVerification}/resubmit": {
             "post": {
                 "operationId": "doctorVerification.resubmit",
                 "tags": [
                     "DoctorVerification"
+                ],
+                "parameters": [
+                    {
+                        "name": "doctorVerification",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
                 ],
                 "requestBody": {
                     "content": {
@@ -1657,7 +1667,7 @@
                 }
             }
         },
-        "/admin/doctor-verifications": {
+        "/admin/verifications": {
             "get": {
                 "operationId": "doctorVerification.index",
                 "tags": [
@@ -1818,7 +1828,7 @@
                 }
             }
         },
-        "/admin/doctor-verifications/{doctorVerification}": {
+        "/doctor-verifications/{doctorVerification}/review": {
             "patch": {
                 "operationId": "doctorVerification.review",
                 "tags": [
@@ -2187,7 +2197,10 @@
                                                     "type": "string"
                                                 },
                                                 "avatar_url": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "subscription_status": {
                                                     "type": "string",
@@ -2298,7 +2311,10 @@
                                                     "type": "string"
                                                 },
                                                 "avatar_url": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 }
                                             },
                                             "required": [
@@ -2678,7 +2694,7 @@
         },
         "/skin-concerns": {
             "get": {
-                "operationId": "skinConcern.index_0",
+                "operationId": "skinConcern.index",
                 "tags": [
                     "SkinConcern"
                 ],
@@ -2703,87 +2719,11 @@
                                 }
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/skin-concerns/{skinConcern}": {
-            "get": {
-                "operationId": "skinConcern.show_0",
-                "tags": [
-                    "SkinConcern"
-                ],
-                "parameters": [
-                    {
-                        "name": "skinConcern",
-                        "in": "path",
-                        "required": true,
-                        "description": "The skin concern UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "`SkinConcernResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/SkinConcernResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    }
-                }
-            }
-        },
-        "/admin/skin-concerns": {
-            "get": {
-                "operationId": "skin-concerns.index",
-                "tags": [
-                    "SkinConcern"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `SkinConcernResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/SkinConcernResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             },
             "post": {
-                "operationId": "skin-concerns.store",
+                "operationId": "skinConcern.store",
                 "tags": [
                     "SkinConcern"
                 ],
@@ -2856,9 +2796,9 @@
                 }
             }
         },
-        "/admin/skin-concerns/{skinConcern}": {
+        "/skin-concerns/{skinConcern}": {
             "get": {
-                "operationId": "skin-concerns.show",
+                "operationId": "skinConcern.show",
                 "tags": [
                     "SkinConcern"
                 ],
@@ -2894,14 +2834,11 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             },
-            "put": {
-                "operationId": "skin-concerns.update",
+            "patch": {
+                "operationId": "skinConcern.update",
                 "tags": [
                     "SkinConcern"
                 ],
@@ -2983,7 +2920,7 @@
                 }
             },
             "delete": {
-                "operationId": "skin-concerns.destroy",
+                "operationId": "skinConcern.destroy",
                 "tags": [
                     "SkinConcern"
                 ],
@@ -3046,7 +2983,7 @@
                 }
             }
         },
-        "/recommendations": {
+        "/skin-recommendations": {
             "get": {
                 "operationId": "skinRecommendation.index",
                 "tags": [
@@ -3290,6 +3227,28 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Dokter harus terverifikasi terlebih dahulu"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
                     },
@@ -3299,7 +3258,7 @@
                 }
             }
         },
-        "/recommendations/{skinRecommendation}": {
+        "/skin-recommendations/{skinRecommendation}": {
             "get": {
                 "operationId": "skinRecommendation.show",
                 "tags": [
@@ -3558,7 +3517,7 @@
         },
         "/skin-types": {
             "get": {
-                "operationId": "skinType.index_0",
+                "operationId": "skinType.index",
                 "tags": [
                     "SkinType"
                 ],
@@ -3583,87 +3542,11 @@
                                 }
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/skin-types/{skinType}": {
-            "get": {
-                "operationId": "skinType.show_0",
-                "tags": [
-                    "SkinType"
-                ],
-                "parameters": [
-                    {
-                        "name": "skinType",
-                        "in": "path",
-                        "required": true,
-                        "description": "The skin type UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "`SkinTypeResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/SkinTypeResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    }
-                }
-            }
-        },
-        "/admin/skin-types": {
-            "get": {
-                "operationId": "skin-types.index",
-                "tags": [
-                    "SkinType"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `SkinTypeResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/SkinTypeResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             },
             "post": {
-                "operationId": "skin-types.store",
+                "operationId": "skinType.store",
                 "tags": [
                     "SkinType"
                 ],
@@ -3723,9 +3606,9 @@
                 }
             }
         },
-        "/admin/skin-types/{skinType}": {
+        "/skin-types/{skinType}": {
             "get": {
-                "operationId": "skin-types.show",
+                "operationId": "skinType.show",
                 "tags": [
                     "SkinType"
                 ],
@@ -3761,14 +3644,11 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             },
-            "put": {
-                "operationId": "skin-types.update",
+            "patch": {
+                "operationId": "skinType.update",
                 "tags": [
                     "SkinType"
                 ],
@@ -3838,7 +3718,7 @@
                 }
             },
             "delete": {
-                "operationId": "skin-types.destroy",
+                "operationId": "skinType.destroy",
                 "tags": [
                     "SkinType"
                 ],
@@ -3901,7 +3781,7 @@
                 }
             }
         },
-        "/products": {
+        "/skincare-products": {
             "get": {
                 "operationId": "skincareProduct.index",
                 "tags": [
@@ -4151,6 +4031,28 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Dokter harus terverifikasi terlebih dahulu"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
                     },
@@ -4160,7 +4062,7 @@
                 }
             }
         },
-        "/products/{skincareProduct}": {
+        "/skincare-products/{skincareProduct}": {
             "get": {
                 "operationId": "skincareProduct.show",
                 "tags": [
@@ -4418,6 +4320,158 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/skincare-products": {
+            "get": {
+                "operationId": "skincareProduct.adminIndex",
+                "tags": [
+                    "SkincareProduct"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `SkincareProductResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SkincareProductResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "minimum": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "description": "Generated paginator links.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "url",
+                                                            "label",
+                                                            "active"
+                                                        ]
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "Base path for paginator generated URLs."
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "description": "Number of items shown per page.",
+                                                    "minimum": 0
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ],
+                                                    "description": "Number of the last item in the slice.",
+                                                    "minimum": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "Total number of items being paginated.",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "links",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -5029,7 +5083,10 @@
                                     "type": "string"
                                 },
                                 "url": {
-                                    "type": "string"
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
                                 },
                                 "file_name": {
                                     "type": "string"
@@ -5081,7 +5138,7 @@
                         "type": "string"
                     },
                     "location": {
-                        "type": "null"
+                        "type": "string"
                     },
                     "is_current": {
                         "type": "boolean"
@@ -5185,7 +5242,10 @@
                         "type": "string"
                     },
                     "image_url": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "created_at": {
                         "type": [

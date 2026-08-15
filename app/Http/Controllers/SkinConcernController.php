@@ -11,7 +11,7 @@ class SkinConcernController extends Controller
 {
     public function index(Request $request)
     {
-        $concerns = SkinConcern::where('is_active', true)
+        $concerns = SkinConcern::query()
             ->when(! $request->user()?->hasRole('admin'), fn ($q) => $q->where('is_active', true))
             ->orderBy('name')
             ->get();

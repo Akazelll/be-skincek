@@ -33,7 +33,7 @@ class DoctorVerificationTest extends TestCase
         $doctor->assignRole('doctor');
         Sanctum::actingAs($doctor);
 
-        $this->postJson('/api/v1/doctor-verification', [
+        $this->postJson('/api/v1/doctor-verifications', [
             'str_number' => 'STR123456',
             'specialization' => 'Dermatology',
             'documents' => [UploadedFile::fake()->image('license.jpg')],
@@ -59,7 +59,7 @@ class DoctorVerificationTest extends TestCase
         ]);
         Sanctum::actingAs($doctor);
 
-        $this->postJson('/api/v1/doctor-verification', [
+        $this->postJson('/api/v1/doctor-verifications', [
             'specialization' => 'Dermatology',
         ])->assertUnprocessable();
     }
@@ -80,7 +80,7 @@ class DoctorVerificationTest extends TestCase
 
         Sanctum::actingAs($admin);
 
-        $this->patchJson("/api/v1/admin/doctor-verifications/{$verification->uuid}", [
+        $this->patchJson("/api/v1/doctor-verifications/{$verification->uuid}/review", [
             'status' => 'approved',
         ])->assertOk()
             ->assertJsonPath('data.verification_status', 'approved');
@@ -104,7 +104,7 @@ class DoctorVerificationTest extends TestCase
         ]);
 
         Sanctum::actingAs($admin);
-        $this->patchJson("/api/v1/admin/doctor-verifications/{$verification->uuid}", [
+        $this->patchJson("/api/v1/doctor-verifications/{$verification->uuid}/review", [
             'status' => 'needs_revision',
             'revision_note' => 'Foto tidak jelas',
         ])->assertOk()
@@ -112,7 +112,7 @@ class DoctorVerificationTest extends TestCase
             ->assertJsonPath('data.revision_note', 'Foto tidak jelas');
 
         Sanctum::actingAs($doctor);
-        $this->postJson('/api/v1/doctor-verification/resubmit', [
+        $this->postJson("/api/v1/doctor-verifications/{$verification->uuid}/resubmit", [
             'specialization' => 'Dermatology',
         ])->assertOk()
             ->assertJsonPath('data.verification_status', 'pending');
@@ -134,7 +134,7 @@ class DoctorVerificationTest extends TestCase
 
         Sanctum::actingAs($admin);
 
-        $this->patchJson("/api/v1/admin/doctor-verifications/{$verification->uuid}", [
+        $this->patchJson("/api/v1/doctor-verifications/{$verification->uuid}/review", [
             'status' => 'rejected',
             'rejection_reason' => 'Invalid',
         ])->assertUnprocessable();
@@ -146,7 +146,7 @@ class DoctorVerificationTest extends TestCase
         $user->assignRole('user');
         Sanctum::actingAs($user);
 
-        $this->postJson('/api/v1/doctor-verification', [
+        $this->postJson('/api/v1/doctor-verifications', [
             'specialization' => 'Dermatology',
         ])->assertForbidden();
     }
@@ -169,7 +169,7 @@ class DoctorVerificationTest extends TestCase
 
         Sanctum::actingAs($admin);
 
-        $this->patchJson("/api/v1/admin/doctor-verifications/{$verification->uuid}", [
+        $this->patchJson("/api/v1/doctor-verifications/{$verification->uuid}/review", [
             'status' => 'approved',
         ])->assertOk();
 

@@ -7,13 +7,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class LoginActivityResource extends JsonResource
 {
+    public function __construct($resource, private ?array $location = null)
+    {
+        parent::__construct($resource);
+    }
+
     public function toArray(Request $request): array
     {
         return [
             'uuid' => $this->uuid,
             'device' => $this->deviceName($this->user_agent),
             'ip_address' => $this->ip_address,
-            'location' => null,
+            'location' => $this->location,
             'is_current' => $request->user()->currentAccessToken()?->getKey() === $this->getKey(),
             'last_used_at' => $this->last_used_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),

@@ -41,7 +41,7 @@ class RecommendationTest extends TestCase
             'recommendation_text' => 'Apply daily',
         ]);
 
-        $this->getJson('/api/v1/recommendations?ml_label=acne')
+        $this->getJson('/api/v1/skin-recommendations?ml_label=acne')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.title', 'Use Salicylic Acid');
@@ -62,7 +62,7 @@ class RecommendationTest extends TestCase
         $concern = SkinConcern::create(['name' => 'Acne', 'ml_label' => 'acne']);
         Sanctum::actingAs($doctor);
 
-        $this->postJson('/api/v1/recommendations', [
+        $this->postJson('/api/v1/skin-recommendations', [
             'concern_id' => $concern->id,
             'title' => 'Gentle Cleanser',
             'recommendation_text' => 'Use morning and night',
@@ -77,7 +77,7 @@ class RecommendationTest extends TestCase
         $user->assignRole('user');
         Sanctum::actingAs($user);
 
-        $this->postJson('/api/v1/recommendations', [
+        $this->postJson('/api/v1/skin-recommendations', [
             'concern_id' => 1,
             'title' => 'Test',
             'recommendation_text' => 'Test',
