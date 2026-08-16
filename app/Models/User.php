@@ -54,6 +54,12 @@ class User extends Authenticatable implements HasMedia
             ->exists();
     }
 
+    public function hasReachedFreeChatQuota(): bool
+    {
+        return $this->user_messages_count >= config('chat.free_message_limit', 3)
+            && ! $this->hasActiveSubscription();
+    }
+
     public function predictionHistories()
     {
         return $this->hasMany(PredictionHistory::class);

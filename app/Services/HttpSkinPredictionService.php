@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Http;
 
 class HttpSkinPredictionService implements SkinPredictionServiceContract
 {
-    public function predict(string $imagePath, bool $cropped = false): array
+    public function predict(string $imagePath, bool $cropped = false, ?string $originalName = null): array
     {
         $endpoint = $cropped ? '/predict-crop' : '/predict';
 
         return Http::baseUrl(config('services.ml.url'))
             ->timeout(config('services.ml.timeout'))
             ->retry(config('services.ml.retries'), 200)
-            ->attach('file', fopen($imagePath, 'r'), basename($imagePath))
+            ->attach('file', fopen($imagePath, 'r'), $originalName ?: basename($imagePath))
             ->post($endpoint)
             ->throw()
             ->json();

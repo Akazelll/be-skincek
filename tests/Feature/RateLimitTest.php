@@ -90,7 +90,7 @@ class RateLimitTest extends TestCase
     {
         $this->app->instance(SkinPredictionServiceContract::class, new class implements SkinPredictionServiceContract
         {
-            public function predict(string $imagePath, bool $cropped = false): array
+            public function predict(string $imagePath, bool $cropped = false, ?string $originalName = null): array
             {
                 return [
                     'predicted_class' => 'acne',

@@ -47,6 +47,14 @@ class DoctorVerificationController extends Controller
         $validated = $request->validate([
             'str_number' => ['nullable', 'string', 'max:50'],
             'specialization' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:100'],
+            'sub_specialization' => ['nullable', 'string', 'max:255'],
+            'experience_years' => ['nullable', 'integer', 'between:0,100'],
+            'alma_mater' => ['nullable', 'string', 'max:255'],
+            'practice_locations' => ['nullable', 'array', 'max:20'],
+            'practice_locations.*' => ['string', 'max:255'],
+            'professional_organizations' => ['nullable', 'array', 'max:20'],
+            'professional_organizations.*' => ['string', 'max:100'],
             'documents.*' => ['required', 'file', 'mimes:jpeg,jpg,png,pdf', 'max:5120'],
         ]);
 
@@ -55,6 +63,12 @@ class DoctorVerificationController extends Controller
                 $existing->update([
                     'str_number' => $validated['str_number'] ?? null,
                     'specialization' => $validated['specialization'],
+                    'title' => $validated['title'] ?? null,
+                    'sub_specialization' => $validated['sub_specialization'] ?? null,
+                    'experience_years' => $validated['experience_years'] ?? null,
+                    'alma_mater' => $validated['alma_mater'] ?? null,
+                    'practice_locations' => $validated['practice_locations'] ?? [],
+                    'professional_organizations' => $validated['professional_organizations'] ?? [],
                     'verification_status' => VerificationStatus::PENDING,
                     'rejection_reason' => null,
                     'revision_note' => null,
@@ -67,6 +81,12 @@ class DoctorVerificationController extends Controller
                 $verification = $user->doctorVerification()->create([
                     'str_number' => $validated['str_number'] ?? null,
                     'specialization' => $validated['specialization'],
+                    'title' => $validated['title'] ?? null,
+                    'sub_specialization' => $validated['sub_specialization'] ?? null,
+                    'experience_years' => $validated['experience_years'] ?? null,
+                    'alma_mater' => $validated['alma_mater'] ?? null,
+                    'practice_locations' => $validated['practice_locations'] ?? [],
+                    'professional_organizations' => $validated['professional_organizations'] ?? [],
                     'verification_status' => VerificationStatus::PENDING,
                 ]);
             }
@@ -95,6 +115,14 @@ class DoctorVerificationController extends Controller
         $validated = $request->validate([
             'str_number' => ['nullable', 'string', 'max:50'],
             'specialization' => ['sometimes', 'string', 'max:255'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'sub_specialization' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'experience_years' => ['sometimes', 'nullable', 'integer', 'between:0,100'],
+            'alma_mater' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'practice_locations' => ['sometimes', 'nullable', 'array', 'max:20'],
+            'practice_locations.*' => ['string', 'max:255'],
+            'professional_organizations' => ['sometimes', 'nullable', 'array', 'max:20'],
+            'professional_organizations.*' => ['string', 'max:100'],
             'documents.*' => ['sometimes', 'file', 'mimes:jpeg,jpg,png,pdf', 'max:5120'],
         ]);
 
@@ -102,6 +130,12 @@ class DoctorVerificationController extends Controller
             $update = array_filter([
                 'str_number' => $validated['str_number'] ?? null,
                 'specialization' => $validated['specialization'] ?? null,
+                'title' => $validated['title'] ?? null,
+                'sub_specialization' => $validated['sub_specialization'] ?? null,
+                'experience_years' => $validated['experience_years'] ?? null,
+                'alma_mater' => $validated['alma_mater'] ?? null,
+                'practice_locations' => $validated['practice_locations'] ?? null,
+                'professional_organizations' => $validated['professional_organizations'] ?? null,
             ], fn ($v) => $v !== null);
 
             $update['verification_status'] = VerificationStatus::PENDING;

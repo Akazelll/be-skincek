@@ -83,7 +83,7 @@ class ConversationController extends Controller
         $message = DB::transaction(function () use ($conversation, $user, $validated, $isUserSender) {
             $locked = Conversation::whereKey($conversation->getKey())->lockForUpdate()->first();
 
-            if ($isUserSender && $locked->message_count >= 3 && ! $user->hasActiveSubscription()) {
+            if ($isUserSender && $user->hasReachedFreeChatQuota()) {
                 abort(402, 'Kamu sudah melewati 3 pesan gratis. Upgrade ke SkinCek Pro untuk melanjutkan chat.');
             }
 
@@ -94,6 +94,7 @@ class ConversationController extends Controller
 
             if ($isUserSender) {
                 $locked->increment('message_count');
+                $user->increment('user_messages_count');
             }
 
             return $message;

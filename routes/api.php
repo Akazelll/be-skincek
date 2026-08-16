@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DeviceTokenController;
+use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorVerificationController;
 use App\Http\Controllers\LoginActivityController;
 use App\Http\Controllers\PasswordResetController;
@@ -67,6 +68,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         Route::get('/login-activity', [LoginActivityController::class, 'index']);
         Route::delete('/login-activity/{personalAccessToken}', [LoginActivityController::class, 'destroy']);
+
+        Route::get('/doctors', [DoctorController::class, 'index'])->name('doctors.index');
+        Route::get('/doctors/{doctor}', [DoctorController::class, 'show'])->name('doctors.show');
 
         Route::get('/subscriptions', [SubscriptionController::class, 'index']);
         Route::post('/subscriptions/checkout', [SubscriptionController::class, 'checkout']);

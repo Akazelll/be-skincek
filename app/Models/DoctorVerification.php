@@ -21,6 +21,9 @@ class DoctorVerification extends Model implements HasMedia
     {
         return [
             'verification_status' => VerificationStatus::class,
+            'experience_years' => 'integer',
+            'practice_locations' => 'array',
+            'professional_organizations' => 'array',
             'reviewed_at' => 'datetime',
         ];
     }

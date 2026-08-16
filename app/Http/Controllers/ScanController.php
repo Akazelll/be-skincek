@@ -49,7 +49,11 @@ class ScanController extends Controller
 
     private function createPrediction(Request $request, SkinPredictionServiceContract $service, ScanMode $mode)
     {
-        $result = $service->predict($request->file('image')->getRealPath(), $mode === ScanMode::LIVECAM);
+        $result = $service->predict(
+            $request->file('image')->getRealPath(),
+            $mode === ScanMode::LIVECAM,
+            $request->file('image')->getClientOriginalName(),
+        );
         validator($result, [
             'predicted_class' => ['required', 'string'],
             'confidence' => ['required', 'numeric', 'between:0,1'],

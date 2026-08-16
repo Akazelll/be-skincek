@@ -4,11 +4,12 @@
 
 |                  |                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------- |
-| **Versi**        | 1.1 (Draft)                                                                                             |
+| **Versi**        | 1.2 (Draft)                                                                                             |
 | **Tanggal**      | 29 Juli 2026                                                                                            |
 | **Disusun oleh** | Akazell                                                                                                 |
 | **Status**       | Draft final — seluruh gap enterprise-readiness sudah ditutup, siap direview sebelum development dimulai |
 
+> **Changelog v1.2:** perombakan konsep chat — kuota 3 pesan gratis menjadi **global lintas semua dokter** (bukan per percakapan), ditambahkan **daftar dokter** & **profil dokter lengkap** (gelar, spesialisasi & subspesialisasi, STR, pengalaman praktik, almamater, lokasi praktik offline, organisasi profesi) yang diisi dokter lewat form verifikasi dan hanya tampil setelah disetujui admin. Lihat bagian 7.1, 7.2, 7.8, 8.3, 8.8, 9, 13.
 > **Changelog v1.1:** fitur profil lanjutan — status langganan (Free/Pro), riwayat langganan (append-only log), receipt pembayaran, dan Login Activity (extend `personal_access_tokens`). Paket Pro ditetapkan lifetime, one-time payment Rp15.000. Lihat bagian 7.10, 7.12, 8.10, 9, 13.
 > **Changelog v1.0:** menutup seluruh gap enterprise-readiness: API versioning (`/api/v1`), error tracking production (Sentry), konsistensi format response (API Resource), rate limiting menyeluruh, idempotency webhook Midtrans, strategi testing & CI, backup & disaster recovery, kepatuhan awal UU PDP (consent + right to erasure), dan endpoint profile resmi. Lihat bagian 3, 7.1, 8.1, 8.6, 8.10, 9, 11, 12, 13.
 > **Changelog v0.9:** token Sanctum tidak pakai auto-expiry (sesi aktif sampai logout manual) — ditambahkan endpoint logout & logout-all sebagai jaring pengaman. Lihat bagian 8.1, 9, 11.
@@ -46,7 +47,7 @@ Tim memutuskan berhenti menggunakan Supabase dan membangun backend kustom dengan
 - Merancang skema data & identifier yang siap menampung pertumbuhan skala enterprise (lihat bagian 13).
 - Mendukung Google Sign-In sebagai metode autentikasi tambahan di samping email/password.
 - Menyediakan alur reset password berbasis OTP yang aman terhadap brute-force & email enumeration.
-- Menyediakan fitur chat user-dokter dengan model freemium (3 pesan gratis per percakapan, lanjut butuh subscription via Midtrans).
+- Menyediakan fitur chat user-dokter dengan model freemium (3 pesan gratis untuk semua dokter / kuota global, lanjut butuh subscription via Midtrans) lengkap dengan daftar dokter & profil dokter lengkap.
 - Merancang integrasi ML service yang mudah diganti/di-upgrade (mis. ke model deep learning) tanpa mengubah kontrak API.
 - Memenuhi praktik enterprise-readiness: API versioning, observability production, konsistensi response, rate limiting, idempotency, strategi backup, dan kepatuhan awal terhadap UU PDP.
 
@@ -70,7 +71,8 @@ Tim memutuskan berhenti menggunakan Supabase dan membangun backend kustom dengan
 - Manajemen skincare products & skin recommendations oleh dokter terverifikasi
 - Notifikasi real-time untuk event terkait verifikasi (dan opsional, hasil scan)
 - Audit trail untuk aksi review/moderasi
-- Chat antara user & dokter terverifikasi, dengan model freemium (3 pesan pertama gratis per percakapan)
+- Chat antara user & dokter terverifikasi, dengan model freemium (3 pesan pertama gratis lintas semua dokter)
+- Daftar dokter terverifikasi beserta profil lengkap yang bisa dilihat user sebelum memulai chat
 - Checkout & aktivasi subscription lewat Midtrans (mode sandbox untuk testing)
 
 ### 5.2 Belum termasuk (out of scope — fase ini)
@@ -107,6 +109,7 @@ Diturunkan dari skema Supabase sebelumnya, dipetakan ulang ke konvensi Eloquent/
 | role               | —                         | digantikan assignment role Spatie Permission (user/doctor/admin)       |
 | avatar_url         | —                         | digantikan relasi Media Library (collection `avatar`)                  |
 | is_active          | boolean                   | default true                                                           |
+| user_messages_count | unsigned int, default 0  | total pesan yang pernah dikirim user ke semua dokter — dipakai untuk cek paywall global (FR-24, FR-39) |
 | timestamps         |                           |                                                                        |
 
 ### 7.2 doctor_verifications
@@ -117,7 +120,13 @@ Diturunkan dari skema Supabase sebelumnya, dipetakan ulang ke konvensi Eloquent/
 | uuid                | char(36), unique               | identifier publik                                             |
 | doctor_id           | bigint unsigned, FK → users.id | unique, satu pengajuan aktif per dokter                       |
 | str_number          | varchar, nullable              | nomor STR                                                     |
-| specialization      | varchar                        |                                                               |
+| title               | varchar, nullable              | gelar medis, mis. `dr.`, `dr. Sp.PD`, `dr. Sp.KK`             |
+| specialization      | varchar                        | spesialisasi utama (wajib)                                    |
+| sub_specialization  | varchar, nullable              | subspesialisasi / fokus layanan                               |
+| experience_years    | smallint unsigned, nullable    | tahun pengalaman praktik                                      |
+| alma_mater          | varchar, nullable              | institusi/universitas pendidikan                              |
+| practice_locations  | json, nullable                 | array rumah sakit/klinik praktik offline                      |
+| professional_organizations | json, nullable           | array organisasi profesi (IDI, PERDOSKI, IDAI, dsb.)          |
 | document_url        | —                              | digantikan Media Library (collection `verification-document`) |
 | verification_status | varchar (PHP enum)             | `pending` / `approved` / `rejected` / `needs_revision`        |
 | rejection_reason    | text, nullable                 | diisi saat status `rejected`                                  |
@@ -210,10 +219,10 @@ Diturunkan dari skema Supabase sebelumnya, dipetakan ulang ke konvensi Eloquent/
 | uuid          | char(36), unique               | identifier publik                                                      |
 | user_id       | bigint unsigned, FK → users.id |                                                                        |
 | doctor_id     | bigint unsigned, FK → users.id |                                                                        |
-| message_count | unsigned int, default 0        | jumlah pesan dari user (bukan total) — dipakai untuk cek paywall FR-24 |
+| message_count | unsigned int, default 0        | jumlah pesan dari user (bukan total) — **tampilan saja**, tidak lagi dipakai untuk cek paywall (cek paywall global memakai `users.user_messages_count`, FR-24) |
 | timestamps    |                                |                                                                        |
 
-> Satu percakapan per pasangan `user_id` + `doctor_id` (unique constraint gabungan).
+> Satu percakapan per pasangan `user_id` + `doctor_id` (unique constraint gabungan). Kuota pesan gratis dihitung **global** di `users.user_messages_count`, bukan per percakapan.
 
 ### 7.9 messages
 
@@ -290,7 +299,7 @@ Diturunkan dari skema Supabase sebelumnya, dipetakan ulang ke konvensi Eloquent/
 
 ### 8.3 Verifikasi Dokter
 
-- **FR-8** — Dokter mengajukan verifikasi (`str_number`, `specialization`, upload dokumen).
+- **FR-8** — Dokter mengajukan verifikasi (`str_number`, `specialization`, upload dokumen) sekaligus data profil (opsional): `title`, `sub_specialization`, `experience_years`, `alma_mater`, `practice_locations`, `professional_organizations` — data profil hanya tampil ke publik setelah status `approved` (FR-40).
 - **FR-9** — Admin mereview pengajuan: approve, reject (dengan `rejection_reason`), atau minta revisi (dengan `revision_note`); tercatat di `reviewed_by` & `reviewed_at`.
 - **FR-9a** — Jika status `needs_revision`, dokter dapat mengajukan ulang dokumen; status kembali ke `pending` untuk direview lagi.
 - **FR-10** — Perubahan status verifikasi memicu notifikasi real-time ke dokter terkait (Reverb).
@@ -323,11 +332,13 @@ Diturunkan dari skema Supabase sebelumnya, dipetakan ulang ke konvensi Eloquent/
 ### 8.8 Chat dengan Dokter
 
 - **FR-22** — User dapat memulai percakapan dengan dokter terverifikasi (`POST /conversations`); satu thread per pasangan user-dokter.
+- **FR-22a** — User dapat melihat daftar dokter terverifikasi (`GET /doctors`, info dasar: nama + gelar, spesialisasi) untuk memilih dokter yang akan di-chat.
 - **FR-23** — User & dokter dapat mengirim pesan dalam percakapan (`POST /conversations/{id}/messages`); isi pesan dienkripsi at-rest, bukan end-to-end (server tetap bisa memproses/memoderasi konten kalau diperlukan).
-- **FR-24** — Setelah 3 pesan dari user dalam satu percakapan, pesan berikutnya dari user diblokir (`402 Payment Required`) sampai user punya subscription aktif; balasan dokter tidak dibatasi.
+- **FR-24** — User mendapat **3 pesan gratis lintas semua dokter** (kuota global di `users.user_messages_count`, bukan per percakapan); pesan berikutnya dari user diblokir (`402 Payment Required`) sampai user punya subscription aktif; balasan dokter tidak dibatasi.
 - **FR-25** — User dapat checkout paket Pro (lifetime, one-time payment Rp15.000) lewat Midtrans Snap (`POST /subscriptions/checkout`); status subscription diperbarui otomatis lewat webhook Midtrans (`POST /webhooks/midtrans`), `ends_at` diset `null` (selamanya) begitu pembayaran sukses.
 - **FR-25a** — Webhook Midtrans bersifat idempotent: notifikasi yang sama (ditandai `midtrans_order_id` + status) yang diterima berkali-kali (retry dari Midtrans) tidak mengubah state subscription lebih dari sekali.
 - **FR-26** — Riwayat pesan yang sudah terkirim tetap bisa dibaca meski subscription habis; paywall hanya menahan pesan baru.
+- **FR-39** — Profil dokter lengkap hanya tampil untuk dokter berstatus `approved`: Identitas & Gelar (`full_name` + `title`), Spesialisasi & Subspesialisasi, Nomor STR, Pengalaman Praktik, Asal Institusi/Almamater, Rumah Sakit/Lokasi Praktik offline, dan Organisasi Profesi (`GET /doctors/{id}`); dokter yang belum approved tidak muncul di daftar maupun profil.
 
 ### 8.9 Kesiapan Ganti Model ML
 
@@ -370,6 +381,8 @@ Seluruh endpoint diprefix `/api/v1/` (URI versioning) — lihat bagian 13 untuk 
 | GET       | `/api/v1/scans`                              | user                     | List riwayat scan milik user (filter/sort)                                         |
 | GET       | `/api/v1/scans/{id}`                         | user                     | Detail satu hasil scan                                                             |
 | POST      | `/api/v1/conversations`                      | user                     | Mulai percakapan dengan dokter (FR-22)                                             |
+| GET       | `/api/v1/doctors`                            | user, doctor, admin      | List dokter terverifikasi — nama + gelar + spesialisasi (FR-22a)                   |
+| GET       | `/api/v1/doctors/{id}`                       | user, doctor, admin      | Profil lengkap dokter terverifikasi (FR-39)                                        |
 | GET       | `/api/v1/conversations`                      | user, doctor             | List percakapan milik user/dokter yang login                                       |
 | GET       | `/api/v1/conversations/{id}/messages`        | user, doctor             | Riwayat pesan (paginated)                                                          |
 | POST      | `/api/v1/conversations/{id}/messages`        | user, doctor             | Kirim pesan — kena paywall kalau sender user (FR-23, FR-24)                        |

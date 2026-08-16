@@ -47,6 +47,37 @@ class DoctorVerificationTest extends TestCase
         $this->assertDatabaseCount('media', 1);
     }
 
+    public function test_doctor_can_submit_profile_fields_with_verification(): void
+    {
+        $doctor = User::factory()->create();
+        $doctor->assignRole('doctor');
+        Sanctum::actingAs($doctor);
+
+        $this->postJson('/api/v1/doctor-verifications', [
+            'str_number' => 'STR999',
+            'specialization' => 'Dermatology',
+            'title' => 'dr. Sp.PD',
+            'sub_specialization' => 'Kulit & Kelamin',
+            'experience_years' => 8,
+            'alma_mater' => 'Universitas Indonesia',
+            'practice_locations' => ['RS Cipto', 'Klinik Sehat'],
+            'professional_organizations' => ['IDI', 'PERDOSKI'],
+            'documents' => [UploadedFile::fake()->image('license.jpg')],
+        ])->assertCreated()
+            ->assertJsonPath('data.title', 'dr. Sp.PD')
+            ->assertJsonPath('data.sub_specialization', 'Kulit & Kelamin')
+            ->assertJsonPath('data.experience_years', 8)
+            ->assertJsonPath('data.alma_mater', 'Universitas Indonesia')
+            ->assertJsonPath('data.practice_locations', ['RS Cipto', 'Klinik Sehat'])
+            ->assertJsonPath('data.professional_organizations', ['IDI', 'PERDOSKI']);
+
+        $this->assertDatabaseHas('doctor_verifications', [
+            'doctor_id' => $doctor->id,
+            'title' => 'dr. Sp.PD',
+            'experience_years' => 8,
+        ]);
+    }
+
     public function test_doctor_cannot_submit_twice_while_pending(): void
     {
         $doctor = User::factory()->create();

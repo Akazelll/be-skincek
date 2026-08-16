@@ -121,19 +121,41 @@ class ChatTest extends TestCase
 
     public function test_fourth_user_message_is_blocked_without_subscription(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['user_messages_count' => 3]);
         $user->assignRole('user');
         $doctor = $this->makeVerifiedDoctor();
         $conversation = Conversation::create([
             'user_id' => $user->id,
             'doctor_id' => $doctor->id,
-            'message_count' => 3,
         ]);
 
         $this->sendMessage($user, $conversation, 'pesan keempat')
             ->assertStatus(402);
 
         $this->assertDatabaseCount('messages', 0);
+    }
+
+    public function test_free_quota_is_counted_across_all_doctors(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctorA = $this->makeVerifiedDoctor();
+        $doctorB = $this->makeVerifiedDoctor();
+
+        $conversationA = Conversation::create(['user_id' => $user->id, 'doctor_id' => $doctorA->id]);
+        $conversationB = Conversation::create(['user_id' => $user->id, 'doctor_id' => $doctorB->id]);
+
+        $this->sendMessage($user, $conversationA, 'pesan 1')->assertCreated();
+        $this->sendMessage($user, $conversationB, 'pesan 2')->assertCreated();
+        $this->sendMessage($user, $conversationA, 'pesan 3')->assertCreated();
+
+        $this->sendMessage($user, $conversationB, 'pesan keempat lintas dokter')
+            ->assertStatus(402);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'user_messages_count' => 3,
+        ]);
     }
 
     public function test_doctor_replies_are_never_blocked(): void
@@ -185,7 +207,7 @@ class ChatTest extends TestCase
 
     public function test_message_history_stays_readable_after_paywall(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['user_messages_count' => 3]);
         $user->assignRole('user');
         $doctor = $this->makeVerifiedDoctor();
         $conversation = Conversation::create([
