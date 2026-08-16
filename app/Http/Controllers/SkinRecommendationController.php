@@ -25,6 +25,16 @@ class SkinRecommendationController extends Controller
         return SkinRecommendationResource::collection($recommendations);
     }
 
+    public function doctorIndex(Request $request)
+    {
+        $recommendations = $request->user()->skinRecommendations()
+            ->with(['concern', 'product', 'doctor'])
+            ->latest()
+            ->paginate($this->perPage($request));
+
+        return SkinRecommendationResource::collection($recommendations);
+    }
+
     public function store(Request $request)
     {
         abort_unless($request->user()->isVerifiedDoctor(), 403, 'Dokter harus terverifikasi terlebih dahulu');

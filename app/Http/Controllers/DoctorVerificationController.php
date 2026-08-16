@@ -24,6 +24,11 @@ class DoctorVerificationController extends Controller
         return DoctorVerificationResource::collection($verifications);
     }
 
+    public function showAdmin(DoctorVerification $doctorVerification)
+    {
+        return new DoctorVerificationResource($doctorVerification->load('doctor'));
+    }
+
     public function show(Request $request)
     {
         $verification = $request->user()->doctorVerification;

@@ -99,9 +99,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         // Admin routes
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/users', [AdminController::class, 'listUsers']);
+            Route::get('/admin/users/{user}', [AdminController::class, 'showUser']);
             Route::patch('/admin/users/{user}/role', [AdminController::class, 'assignRole']);
             Route::get('/admin/activity-log', [AdminController::class, 'activityLog']);
             Route::get('/admin/verifications', [DoctorVerificationController::class, 'index']);
+            Route::get('/admin/verifications/{doctorVerification}', [DoctorVerificationController::class, 'showAdmin']);
             Route::patch('/doctor-verifications/{doctorVerification}/review', [DoctorVerificationController::class, 'review']);
 
             Route::post('/skin-concerns', [SkinConcernController::class, 'store']);
@@ -115,10 +117,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         // Product & recommendation management (doctor)
         Route::middleware('role:doctor')->group(function () {
+            Route::get('/doctor/products', [SkincareProductController::class, 'doctorIndex']);
             Route::post('/skincare-products', [SkincareProductController::class, 'store']);
             Route::patch('/skincare-products/{skincareProduct}', [SkincareProductController::class, 'update']);
             Route::delete('/skincare-products/{skincareProduct}', [SkincareProductController::class, 'destroy']);
 
+            Route::get('/doctor/recommendations', [SkinRecommendationController::class, 'doctorIndex']);
             Route::post('/skin-recommendations', [SkinRecommendationController::class, 'store']);
             Route::patch('/skin-recommendations/{skinRecommendation}', [SkinRecommendationController::class, 'update']);
             Route::delete('/skin-recommendations/{skinRecommendation}', [SkinRecommendationController::class, 'destroy']);

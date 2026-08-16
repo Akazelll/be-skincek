@@ -120,6 +120,29 @@ class DoctorVerificationTest extends TestCase
         $this->assertEquals($admin->id, $verification->fresh()->reviewed_by);
     }
 
+    public function test_admin_can_view_verification_detail(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $doctor = User::factory()->create();
+        $doctor->assignRole('doctor');
+
+        $verification = DoctorVerification::create([
+            'doctor_id' => $doctor->id,
+            'specialization' => 'Dermatology',
+            'verification_status' => 'pending',
+            'uuid' => Str::uuid(),
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->getJson("/api/v1/admin/verifications/{$verification->uuid}")
+            ->assertOk()
+            ->assertJsonPath('data.uuid', (string) $verification->uuid)
+            ->assertJsonPath('data.specialization', 'Dermatology')
+            ->assertJsonPath('data.doctor.uuid', $doctor->uuid);
+    }
+
     public function test_admin_can_request_revision_and_doctor_can_resubmit(): void
     {
         $admin = User::factory()->create();

@@ -43,6 +43,11 @@ class AdminController extends Controller
         return UserResource::collection($users);
     }
 
+    public function showUser(User $user)
+    {
+        return new UserResource($user->load(['roles', 'doctorVerification']));
+    }
+
     public function activityLog(Request $request)
     {
         $activities = Activity::query()

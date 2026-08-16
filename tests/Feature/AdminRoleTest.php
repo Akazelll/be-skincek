@@ -48,6 +48,26 @@ class AdminRoleTest extends TestCase
         $this->assertTrue($user->fresh()->hasRole('doctor'));
     }
 
+    public function test_admin_can_view_user_detail_with_verification(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $doctor = User::factory()->create();
+        $doctor->assignRole('doctor');
+        $doctor->doctorVerification()->create([
+            'specialization' => 'Dermatology',
+            'verification_status' => 'pending',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->getJson("/api/v1/admin/users/{$doctor->uuid}")
+            ->assertOk()
+            ->assertJsonPath('data.uuid', $doctor->uuid)
+            ->assertJsonPath('data.role', 'doctor')
+            ->assertJsonPath('data.doctor_verification.specialization', 'Dermatology');
+    }
+
     public function test_non_admin_cannot_access_admin_routes(): void
     {
         $user = User::factory()->create();

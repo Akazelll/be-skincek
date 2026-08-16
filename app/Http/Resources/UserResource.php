@@ -15,6 +15,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'role' => $this->roles->first()?->name,
             'is_active' => $this->is_active,
+            'doctor_verification' => DoctorVerificationResource::make($this->whenLoaded('doctorVerification')),
             'created_at' => $this->created_at?->toISOString(),
         ];
     }

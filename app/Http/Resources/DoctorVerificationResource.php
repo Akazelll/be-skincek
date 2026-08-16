@@ -23,6 +23,7 @@ class DoctorVerificationResource extends JsonResource
             'verification_status' => $this->verification_status->value,
             'rejection_reason' => $this->rejection_reason,
             'revision_note' => $this->revision_note,
+            'doctor' => UserResource::make($this->whenLoaded('doctor')),
             'documents' => $this->getMedia('verification-document')->map(fn ($media) => [
                 'uuid' => $media->uuid,
                 'url' => MediaHelper::url($media),
