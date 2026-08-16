@@ -69,7 +69,7 @@ class SubscriptionController extends Controller
                     'email' => $user->email,
                 ],
                 'expiry' => [
-                    'start_time' => now()->toISOString(),
+                    'start_time' => now()->format('Y-m-d H:i:s O'),
                     'unit' => 'minutes',
                     'duration' => config('services.midtrans.expiry_duration'),
                 ],
