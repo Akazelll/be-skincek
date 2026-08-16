@@ -29,7 +29,9 @@ class ProfileTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.full_name', $user->full_name)
             ->assertJsonPath('data.role', 'user')
-            ->assertJsonPath('data.subscription_status', 'Free');
+            ->assertJsonPath('data.subscription_status', 'Free')
+            ->assertJsonPath('data.user_messages_count', 0)
+            ->assertJsonPath('data.remaining_free_messages', 3);
 
         $this->patchJson('/api/v1/profile', ['full_name' => 'Updated Name'])
             ->assertOk()

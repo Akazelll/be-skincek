@@ -2512,6 +2512,15 @@
                                                     "type": "integer",
                                                     "minimum": 0
                                                 },
+                                                "user_messages_count": {
+                                                    "type": "integer"
+                                                },
+                                                "remaining_free_messages": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "verification_status": {
                                                     "type": "string"
                                                 },
@@ -2536,6 +2545,8 @@
                                                 "avatar_url",
                                                 "subscription_status",
                                                 "scan_count",
+                                                "user_messages_count",
+                                                "remaining_free_messages",
                                                 "verification_status",
                                                 "product_count",
                                                 "recommendation_count",

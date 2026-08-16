@@ -26,6 +26,11 @@ class ProfileController extends Controller
             $activeSub = $user->subscriptions()->where('status', 'active')->latest()->first();
             $profileData['subscription_status'] = $activeSub ? 'Pro' : 'Free';
             $profileData['scan_count'] = $user->predictionHistories()->count();
+            $profileData['user_messages_count'] = $user->user_messages_count;
+            $profileData['remaining_free_messages'] = max(
+                0,
+                config('chat.free_message_limit', 3) - $user->user_messages_count
+            );
         } elseif ($role === 'doctor') {
             $verification = $user->doctorVerification;
             $profileData['verification_status'] = $verification?->verification_status?->value ?? 'unverified';
