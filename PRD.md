@@ -4,11 +4,12 @@
 
 |                  |                                                                                                         |
 | ---------------- | ------------------------------------------------------------------------------------------------------- |
-| **Versi**        | 1.2 (Draft)                                                                                             |
+| **Versi**        | 1.3 (Draft)                                                                                             |
 | **Tanggal**      | 29 Juli 2026                                                                                            |
 | **Disusun oleh** | Akazell                                                                                                 |
 | **Status**       | Draft final — seluruh gap enterprise-readiness sudah ditutup, siap direview sebelum development dimulai |
 
+> **Changelog v1.3:** pagination list dapat dikontrol via `?per_page=5/10/20/50` (default 10) pada semua endpoint list publik: riwayat scan, daftar dokter, skin recommendations, dan skincare products. Lihat bagian 8.8, 9.
 > **Changelog v1.2:** perombakan konsep chat — kuota 3 pesan gratis menjadi **global lintas semua dokter** (bukan per percakapan), ditambahkan **daftar dokter** & **profil dokter lengkap** (gelar, spesialisasi & subspesialisasi, STR, pengalaman praktik, almamater, lokasi praktik offline, organisasi profesi) yang diisi dokter lewat form verifikasi dan hanya tampil setelah disetujui admin. Lihat bagian 7.1, 7.2, 7.8, 8.3, 8.8, 9, 13.
 > **Changelog v1.1:** fitur profil lanjutan — status langganan (Free/Pro), riwayat langganan (append-only log), receipt pembayaran, dan Login Activity (extend `personal_access_tokens`). Paket Pro ditetapkan lifetime, one-time payment Rp15.000. Lihat bagian 7.10, 7.12, 8.10, 9, 13.
 > **Changelog v1.0:** menutup seluruh gap enterprise-readiness: API versioning (`/api/v1`), error tracking production (Sentry), konsistensi format response (API Resource), rate limiting menyeluruh, idempotency webhook Midtrans, strategi testing & CI, backup & disaster recovery, kepatuhan awal UU PDP (consent + right to erasure), dan endpoint profile resmi. Lihat bagian 3, 7.1, 8.1, 8.6, 8.10, 9, 11, 12, 13.

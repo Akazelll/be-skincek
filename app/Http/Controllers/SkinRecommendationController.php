@@ -20,7 +20,7 @@ class SkinRecommendationController extends Controller
             ->when($request->input('concern_id'), fn ($q, $id) => $q->where('concern_id', $id))
             ->orderByRaw("CASE priority_level WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return SkinRecommendationResource::collection($recommendations);
     }

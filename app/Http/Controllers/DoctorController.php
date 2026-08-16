@@ -17,7 +17,7 @@ class DoctorController extends Controller
                 ->where('verification_status', VerificationStatus::APPROVED))
             ->with('doctorVerification')
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return DoctorResource::collection($doctors);
     }

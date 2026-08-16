@@ -35,7 +35,7 @@ class ScanController extends Controller
             )
             ->allowedSorts('created_at')
             ->defaultSort('-created_at')
-            ->paginate();
+            ->paginate($this->perPage($request));
 
         return PredictionHistoryResource::collection($histories);
     }

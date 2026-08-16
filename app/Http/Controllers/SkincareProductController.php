@@ -15,7 +15,7 @@ class SkincareProductController extends Controller
             ->when($request->input('concern'), fn ($q, $concern) => $q->where('concern_id', $concern))
             ->when($request->input('skin_type'), fn ($q, $type) => $q->where('skin_type_id', $type))
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return SkincareProductResource::collection($products);
     }
@@ -44,9 +44,9 @@ class SkincareProductController extends Controller
         return new SkincareProductResource($skincareProduct->load(['concern', 'skinType', 'doctor']));
     }
 
-    public function adminIndex()
+    public function adminIndex(Request $request)
     {
-        $products = SkincareProduct::with(['concern', 'skinType', 'doctor'])->latest()->paginate(15);
+        $products = SkincareProduct::with(['concern', 'skinType', 'doctor'])->latest()->paginate($this->perPage($request));
 
         return SkincareProductResource::collection($products);
     }

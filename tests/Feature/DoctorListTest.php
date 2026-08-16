@@ -100,4 +100,26 @@ class DoctorListTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.title', 'dr. Sp.KK');
     }
+
+    public function test_per_page_accepts_only_5_10_20_50(): void
+    {
+        $this->makeVerifiedDoctor();
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->getJson('/api/v1/doctors?per_page=5')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 5);
+
+        $this->getJson('/api/v1/doctors?per_page=20')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 20);
+
+        $this->getJson('/api/v1/doctors?per_page=7')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 10);
+
+        $this->getJson('/api/v1/doctors?per_page=999')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 10);
+    }
 }
