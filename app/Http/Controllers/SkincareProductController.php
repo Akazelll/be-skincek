@@ -10,7 +10,7 @@ class SkincareProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = SkincareProduct::with(['concern', 'skinType', 'doctor'])
+        $products = SkincareProduct::with(['concern', 'skinType', 'doctor.roles'])
             ->where('is_active', true)
             ->when($request->input('concern'), fn ($q, $concern) => $q->where('concern_id', $concern))
             ->when($request->input('skin_type'), fn ($q, $type) => $q->where('skin_type_id', $type))
@@ -23,7 +23,7 @@ class SkincareProductController extends Controller
     public function doctorIndex(Request $request)
     {
         $products = $request->user()->skincareProducts()
-            ->with(['concern', 'skinType', 'doctor'])
+            ->with(['concern', 'skinType', 'doctor.roles'])
             ->latest()
             ->paginate($this->perPage($request));
 
@@ -46,17 +46,17 @@ class SkincareProductController extends Controller
 
         $product = $request->user()->skincareProducts()->create($validated);
 
-        return new SkincareProductResource($product->load(['concern', 'skinType', 'doctor']));
+        return new SkincareProductResource($product->load(['concern', 'skinType', 'doctor.roles']));
     }
 
     public function show(SkincareProduct $skincareProduct)
     {
-        return new SkincareProductResource($skincareProduct->load(['concern', 'skinType', 'doctor']));
+        return new SkincareProductResource($skincareProduct->load(['concern', 'skinType', 'doctor.roles']));
     }
 
     public function adminIndex(Request $request)
     {
-        $products = SkincareProduct::with(['concern', 'skinType', 'doctor'])->latest()->paginate($this->perPage($request));
+        $products = SkincareProduct::with(['concern', 'skinType', 'doctor.roles'])->latest()->paginate($this->perPage($request));
 
         return SkincareProductResource::collection($products);
     }
@@ -78,7 +78,7 @@ class SkincareProductController extends Controller
 
         $skincareProduct->update($validated);
 
-        return new SkincareProductResource($skincareProduct->fresh()->load(['concern', 'skinType', 'doctor']));
+        return new SkincareProductResource($skincareProduct->fresh()->load(['concern', 'skinType', 'doctor.roles']));
     }
 
     public function destroy(Request $request, SkincareProduct $skincareProduct)

@@ -28,7 +28,7 @@ class ScanController extends Controller
 
     public function index(Request $request)
     {
-        $histories = QueryBuilder::for($request->user()->predictionHistories())
+        $histories = QueryBuilder::for($request->user()->predictionHistories()->with('media'))
             ->allowedFilters(
                 AllowedFilter::exact('scan_mode'),
                 AllowedFilter::exact('predicted_class'),

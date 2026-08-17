@@ -14,24 +14,24 @@ class DoctorVerificationController extends Controller
 {
     public function index(Request $request)
     {
-        $verifications = DoctorVerification::with('doctor')
+        $verifications = DoctorVerification::with(['doctor', 'media'])
             ->when($request->input('status'), function ($query, $status) {
                 $query->where('verification_status', $status);
             })
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return DoctorVerificationResource::collection($verifications);
     }
 
     public function showAdmin(DoctorVerification $doctorVerification)
     {
-        return new DoctorVerificationResource($doctorVerification->load('doctor'));
+        return new DoctorVerificationResource($doctorVerification->load(['doctor', 'media']));
     }
 
     public function show(Request $request)
     {
-        $verification = $request->user()->doctorVerification;
+        $verification = $request->user()->doctorVerification()->with(['doctor', 'media'])->first();
 
         if (! $verification) {
             return $this->errorResponse('Belum ada pengajuan verifikasi', 404);
@@ -105,7 +105,7 @@ class DoctorVerificationController extends Controller
             return $verification;
         });
 
-        return (new DoctorVerificationResource($verification))->response()->setStatusCode(201);
+        return (new DoctorVerificationResource($verification->load(['doctor', 'media'])))->response()->setStatusCode(201);
     }
 
     public function resubmit(Request $request)
@@ -158,7 +158,7 @@ class DoctorVerificationController extends Controller
             }
         });
 
-        return new DoctorVerificationResource($verification->fresh());
+        return new DoctorVerificationResource($verification->fresh()->load(['doctor', 'media']));
     }
 
     public function review(Request $request, DoctorVerification $doctorVerification)
@@ -187,7 +187,7 @@ class DoctorVerificationController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        DoctorVerificationReviewed::dispatch($doctorVerification->fresh());
+        DoctorVerificationReviewed::dispatch($doctorVerification->fresh()->load('doctor'));
 
         activity()
             ->useLog('doctor_verification_review')
@@ -200,6 +200,6 @@ class DoctorVerificationController extends Controller
             ])
             ->log('Doctor verification reviewed');
 
-        return new DoctorVerificationResource($doctorVerification->fresh());
+        return new DoctorVerificationResource($doctorVerification->fresh()->load(['doctor', 'media']));
     }
 }

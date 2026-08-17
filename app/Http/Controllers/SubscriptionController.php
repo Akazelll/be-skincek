@@ -17,7 +17,7 @@ class SubscriptionController extends Controller
         $subscriptions = $request->user()
             ->subscriptions()
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return SubscriptionResource::collection($subscriptions);
     }

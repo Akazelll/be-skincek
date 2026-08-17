@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\GoogleTokenVerifierContract;
+use App\Enums\VerificationStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,81 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token,
         ], [], 201);
+    }
+
+    public function registerDoctor(Request $request)
+    {
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+            'str_number' => ['nullable', 'string', 'max:50'],
+            'specialization' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:100'],
+            'sub_specialization' => ['nullable', 'string', 'max:255'],
+            'experience_years' => ['nullable', 'integer', 'between:0,100'],
+            'alma_mater' => ['nullable', 'string', 'max:255'],
+            'practice_locations' => ['nullable', 'array', 'max:20'],
+            'practice_locations.*' => ['string', 'max:255'],
+            'professional_organizations' => ['nullable', 'array', 'max:20'],
+            'professional_organizations.*' => ['string', 'max:100'],
+            'documents' => ['required', function ($attribute, $value, $fail) {
+                if (is_array($value)) {
+                    foreach ($value as $file) {
+                        if (! $file instanceof \Illuminate\Http\UploadedFile) {
+                            $fail('Each document must be a valid file.');
+                        }
+                    }
+                } elseif (! $value instanceof \Illuminate\Http\UploadedFile) {
+                    $fail('The documents field must be a file or an array of files.');
+                }
+            }],
+            'documents.*' => ['file', 'mimes:jpeg,jpg,png,pdf', 'max:5120'],
+            'privacy_consent' => ['required', 'accepted'],
+        ]);
+
+        $user = DB::transaction(function () use ($validated, $request) {
+            $user = User::create([
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'privacy_consent_at' => now(),
+                'is_active' => true,
+            ]);
+
+            $user->assignRole('doctor');
+
+            $verification = $user->doctorVerification()->create([
+                'str_number' => $validated['str_number'] ?? null,
+                'specialization' => $validated['specialization'],
+                'title' => $validated['title'] ?? null,
+                'sub_specialization' => $validated['sub_specialization'] ?? null,
+                'experience_years' => $validated['experience_years'] ?? null,
+                'alma_mater' => $validated['alma_mater'] ?? null,
+                'practice_locations' => $validated['practice_locations'] ?? [],
+                'professional_organizations' => $validated['professional_organizations'] ?? [],
+                'verification_status' => VerificationStatus::PENDING,
+            ]);
+
+            if ($request->hasFile('documents')) {
+                $files = $request->file('documents');
+                if (! is_array($files)) {
+                    $files = [$files];
+                }
+                foreach ($files as $file) {
+                    $verification->addMedia($file)->toMediaCollection('verification-document');
+                }
+            }
+
+            return $user;
+        });
+
+        $token = $this->createSessionToken($user, $request);
+
+        return $this->successResponse([
+            'user' => $user,
+            'token' => $token,
+        ], ['message' => 'Registrasi dokter berhasil diajukan.'], 201);
     }
 
     public function login(Request $request)

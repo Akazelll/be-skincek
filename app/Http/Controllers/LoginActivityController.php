@@ -11,7 +11,11 @@ class LoginActivityController extends Controller
 {
     public function index(Request $request, IpLocationResolverContract $resolver)
     {
-        $tokens = $request->user()->tokens()->latest('last_used_at')->latest()->get();
+        $tokens = $request->user()->tokens()
+            ->select('id', 'uuid', 'user_agent', 'ip_address', 'last_used_at', 'created_at')
+            ->latest('last_used_at')
+            ->latest()
+            ->get();
 
         return LoginActivityResource::collection(
             $tokens->map(fn ($token) => new LoginActivityResource($token, $resolver->resolve($token->ip_address)))

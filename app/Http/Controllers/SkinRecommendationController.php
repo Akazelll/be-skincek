@@ -11,7 +11,7 @@ class SkinRecommendationController extends Controller
 {
     public function index(Request $request)
     {
-        $recommendations = SkinRecommendation::with(['concern', 'product', 'doctor'])
+        $recommendations = SkinRecommendation::with(['concern', 'product', 'doctor.roles'])
             ->where('is_active', true)
             ->when($request->input('ml_label'), function ($query, $mlLabel) {
                 $concern = SkinConcern::where('ml_label', $mlLabel)->first();
@@ -28,7 +28,7 @@ class SkinRecommendationController extends Controller
     public function doctorIndex(Request $request)
     {
         $recommendations = $request->user()->skinRecommendations()
-            ->with(['concern', 'product', 'doctor'])
+            ->with(['concern', 'product', 'doctor.roles'])
             ->latest()
             ->paginate($this->perPage($request));
 
@@ -50,7 +50,7 @@ class SkinRecommendationController extends Controller
 
         $recommendation = $request->user()->skinRecommendations()->create($validated);
 
-        return new SkinRecommendationResource($recommendation->load(['concern', 'product', 'doctor']));
+        return new SkinRecommendationResource($recommendation->load(['concern', 'product', 'doctor.roles']));
     }
 
     public function show(SkinRecommendation $skinRecommendation)
@@ -73,7 +73,7 @@ class SkinRecommendationController extends Controller
 
         $skinRecommendation->update($validated);
 
-        return new SkinRecommendationResource($skinRecommendation->fresh()->load(['concern', 'product', 'doctor']));
+        return new SkinRecommendationResource($skinRecommendation->fresh()->load(['concern', 'product', 'doctor.roles']));
     }
 
     public function destroy(Request $request, SkinRecommendation $skinRecommendation)

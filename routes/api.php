@@ -40,6 +40,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
     // Public routes
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+    Route::post('/register-doctor', [AuthController::class, 'registerDoctor'])->middleware('throttle:auth');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
     Route::post('/auth/google', [AuthController::class, 'google'])->middleware('throttle:google-auth');
     Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot-password');

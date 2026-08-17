@@ -15,7 +15,7 @@ class DoctorController extends Controller
             ->role('doctor')
             ->whereHas('doctorVerification', fn ($query) => $query
                 ->where('verification_status', VerificationStatus::APPROVED))
-            ->with('doctorVerification')
+            ->with(['doctorVerification', 'media'])
             ->latest()
             ->paginate($this->perPage($request));
 
@@ -24,13 +24,13 @@ class DoctorController extends Controller
 
     public function show(Request $request, User $doctor)
     {
-        $verification = $doctor->doctorVerification;
+        $doctor->load('doctorVerification');
 
         abort_unless(
-            $verification && $verification->verification_status === VerificationStatus::APPROVED,
+            $doctor->doctorVerification && $doctor->doctorVerification->verification_status === VerificationStatus::APPROVED,
             404
         );
 
-        return new DoctorResource($doctor->load('doctorVerification'));
+        return new DoctorResource($doctor);
     }
 }

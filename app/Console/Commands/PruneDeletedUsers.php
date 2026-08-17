@@ -17,20 +17,20 @@ class PruneDeletedUsers extends Command
     {
         $days = (int) ($this->option('days') ?? config('plans.grace_period_days', 30));
         $cutoff = now()->subDays($days);
+        $count = 0;
 
-        $users = User::onlyTrashed()->where('deleted_at', '<', $cutoff)->get();
-
-        foreach ($users as $user) {
+        User::onlyTrashed()->where('deleted_at', '<', $cutoff)->cursor()->each(function ($user) use (&$count) {
             DB::transaction(function () use ($user) {
-                PredictionHistory::where('user_id', $user->id)->get()->each->forceDelete();
+                PredictionHistory::where('user_id', $user->id)->forceDelete();
 
                 $user->notifications()->delete();
                 $user->tokens()->delete();
                 $user->forceDelete();
             });
-        }
+            $count++;
+        });
 
-        $this->info("Permanently deleted {$users->count()} user(s) past the {$days}-day grace period.");
+        $this->info("Permanently deleted {$count} user(s) past the {$days}-day grace period.");
 
         return self::SUCCESS;
     }

@@ -49,10 +49,10 @@ class ConversationController extends Controller
         $user = $request->user();
 
         $conversations = Conversation::query()
-            ->with(['user', 'doctor', 'messages' => fn ($query) => $query->latest()->limit(1)])
+            ->with(['user.roles', 'doctor.roles', 'messages' => fn ($query) => $query->with('sender.roles')->latest()->limit(1)])
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('doctor_id', $user->id))
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return ConversationResource::collection($conversations);
     }
@@ -62,9 +62,9 @@ class ConversationController extends Controller
         $this->assertParticipant($request->user(), $conversation);
 
         $messages = $conversation->messages()
-            ->with('sender')
+            ->with('sender.roles')
             ->latest()
-            ->paginate(20);
+            ->paginate($this->perPage($request));
 
         return MessageResource::collection($messages);
     }
@@ -100,9 +100,9 @@ class ConversationController extends Controller
             return $message;
         });
 
-        MessageSent::dispatch($message->load('sender'));
+        MessageSent::dispatch($message->load(['sender.roles', 'conversation']));
 
-        return (new MessageResource($message->load('sender')))->response()->setStatusCode(201);
+        return (new MessageResource($message->load('sender.roles')))->response()->setStatusCode(201);
     }
 
     private function assertParticipant(User $user, Conversation $conversation): void

@@ -38,7 +38,7 @@ class AdminController extends Controller
                 $query->role($role);
             })
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return UserResource::collection($users);
     }
@@ -59,7 +59,7 @@ class AdminController extends Controller
                 $query->where('causer_id', $causerId);
             })
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return ActivityLogResource::collection($activities);
     }

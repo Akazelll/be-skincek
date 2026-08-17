@@ -11,7 +11,7 @@ class ProfileController extends Controller
 {
     public function show(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user()->load(['roles', 'doctorVerification']);
         $role = $user->roles->first()?->name ?? 'user';
 
         $profileData = [
@@ -23,8 +23,7 @@ class ProfileController extends Controller
         ];
 
         if ($role === 'user') {
-            $activeSub = $user->subscriptions()->where('status', 'active')->latest()->first();
-            $profileData['subscription_status'] = $activeSub ? 'Pro' : 'Free';
+            $profileData['subscription_status'] = $user->subscriptions()->where('status', 'active')->exists() ? 'Pro' : 'Free';
             $profileData['scan_count'] = $user->predictionHistories()->count();
             $profileData['user_messages_count'] = $user->user_messages_count;
             $profileData['remaining_free_messages'] = max(
@@ -32,8 +31,7 @@ class ProfileController extends Controller
                 config('chat.free_message_limit', 3) - $user->user_messages_count
             );
         } elseif ($role === 'doctor') {
-            $verification = $user->doctorVerification;
-            $profileData['verification_status'] = $verification?->verification_status?->value ?? 'unverified';
+            $profileData['verification_status'] = $user->doctorVerification?->verification_status?->value ?? 'unverified';
             $profileData['product_count'] = $user->skincareProducts()->count();
             $profileData['recommendation_count'] = $user->skinRecommendations()->count();
         } elseif ($role === 'admin') {
