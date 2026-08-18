@@ -6,6 +6,7 @@ use App\Contracts\GoogleTokenVerifierContract;
 use App\Enums\VerificationStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -56,11 +57,11 @@ class AuthController extends Controller
             'documents' => ['required', function ($attribute, $value, $fail) {
                 if (is_array($value)) {
                     foreach ($value as $file) {
-                        if (! $file instanceof \Illuminate\Http\UploadedFile) {
+                        if (! $file instanceof UploadedFile) {
                             $fail('Each document must be a valid file.');
                         }
                     }
-                } elseif (! $value instanceof \Illuminate\Http\UploadedFile) {
+                } elseif (! $value instanceof UploadedFile) {
                     $fail('The documents field must be a file or an array of files.');
                 }
             }],

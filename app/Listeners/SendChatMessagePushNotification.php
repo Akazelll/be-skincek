@@ -26,7 +26,7 @@ class SendChatMessagePushNotification implements ShouldQueue
             ? $conversation->doctor
             : $conversation->user;
 
-        $this->push->sendToUser($recipient, 'Pesan baru', $message->content, [
+        $this->push->sendToUser($recipient, 'Pesan baru', $message->content ?? '📎 Pesan media', [
             'type' => 'chat_message_received',
             'conversation_uuid' => $conversation->uuid,
             'message_uuid' => $message->uuid,

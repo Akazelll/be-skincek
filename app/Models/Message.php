@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Message extends Model
+class Message extends Model implements HasMedia
 {
     use HasPublicUuid;
+    use InteractsWithMedia;
 
     const UPDATED_AT = null;
 
@@ -18,6 +21,11 @@ class Message extends Model
     protected $casts = [
         'content' => 'encrypted',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('chat-media');
+    }
 
     public function conversation()
     {

@@ -13,6 +13,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
@@ -346,5 +347,143 @@ class ChatTest extends TestCase
             'channel_name' => $channelName,
             'socket_id' => '1234.5678',
         ])->assertForbidden();
+    }
+
+    public function test_user_can_send_image_with_caption(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/conversations/{$conversation->uuid}/messages", [
+            'content' => 'Ini foto kulit saya',
+            'media' => UploadedFile::fake()->image('skin.jpg', 600, 400),
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.type', 'image')
+            ->assertJsonPath('data.content', 'Ini foto kulit saya')
+            ->assertJsonStructure(['data' => ['uuid', 'content', 'type', 'media_url', 'sender', 'created_at']]);
+
+        $message = Message::where('conversation_id', $conversation->id)->first();
+        $this->assertEquals('image', $message->type);
+        $this->assertNotNull($message->getFirstMedia('chat-media'));
+    }
+
+    public function test_doctor_can_send_video_without_caption(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+
+        Sanctum::actingAs($doctor);
+
+        $this->postJson("/api/v1/conversations/{$conversation->uuid}/messages", [
+            'media' => UploadedFile::fake()->create('demo.mp4', 512, 'video/mp4'),
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.type', 'video')
+            ->assertJsonPath('data.content', null);
+
+        $message = Message::where('conversation_id', $conversation->id)->first();
+        $this->assertEquals('video', $message->type);
+        $this->assertNotNull($message->getFirstMedia('chat-media'));
+    }
+
+    public function test_message_without_content_and_media_fails_validation(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/conversations/{$conversation->uuid}/messages", [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['content']);
+    }
+
+    public function test_text_message_has_type_text_and_null_media(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+
+        $response = $this->sendMessage($user, $conversation, 'pesan biasa')->assertCreated();
+
+        $this->assertEquals('text', $response->json('data.type'));
+        $this->assertNull($response->json('data.media_url'));
+
+        $message = Message::where('conversation_id', $conversation->id)->first();
+        $this->assertEquals('text', $message->type);
+        $this->assertEmpty($message->getMedia('chat-media')->toArray());
+    }
+
+    public function test_media_url_returned_in_message_history(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/conversations/{$conversation->uuid}/messages", [
+            'content' => 'Foto masalah kulit',
+            'media' => UploadedFile::fake()->image('photo.jpg'),
+        ])->assertCreated();
+
+        $this->getJson("/api/v1/conversations/{$conversation->uuid}/messages")
+            ->assertOk()
+            ->assertJsonPath('data.0.type', 'image')
+            ->assertJsonPath('data.0.content', 'Foto masalah kulit')
+            ->assertJsonStructure(['data' => [['uuid', 'content', 'type', 'media_url', 'sender', 'created_at']]]);
+    }
+
+    public function test_message_sent_event_includes_media_url(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $doctor = $this->makeVerifiedDoctor();
+        $conversation = Conversation::create([
+            'user_id' => $user->id,
+            'doctor_id' => $doctor->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/conversations/{$conversation->uuid}/messages", [
+            'content' => 'Test media broadcast',
+            'media' => UploadedFile::fake()->image('test.jpg'),
+        ])->assertCreated();
+
+        Queue::assertPushed(BroadcastEvent::class, function (BroadcastEvent $job) {
+            $payload = $job->event->broadcastWith();
+
+            return $payload['message']['message_type'] === 'image'
+                && isset($payload['message']['media_url']);
+        });
     }
 }

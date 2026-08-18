@@ -4,6 +4,7 @@ namespace App\Events;
 
 use App\Enums\NotificationType;
 use App\Models\Message;
+use App\Support\MediaHelper;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -31,6 +32,7 @@ class MessageSent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         $sender = $this->message->sender;
+        $media = $this->message->getFirstMedia('chat-media');
 
         return [
             'type' => NotificationType::CHAT_MESSAGE_RECEIVED->value,
@@ -44,6 +46,8 @@ class MessageSent implements ShouldBroadcast
                     'role' => $sender->roles->first()?->name,
                 ],
                 'content' => $this->message->content,
+                'message_type' => $this->message->type ?? 'text',
+                'media_url' => MediaHelper::url($media),
                 'created_at' => $this->message->created_at?->toISOString(),
             ],
         ];

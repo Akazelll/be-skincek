@@ -75,12 +75,22 @@ class ConversationController extends Controller
         $this->assertParticipant($user, $conversation);
 
         $validated = $request->validate([
-            'content' => ['required', 'string', 'max:5000'],
+            'content' => ['required_without:media', 'nullable', 'string', 'max:5000'],
+            'media' => ['nullable', 'file', 'mimes:jpeg,jpg,png,gif,webp,mp4,mov,avi', 'max:10240'],
         ]);
+
+        $hasMedia = $request->hasFile('media');
+        $mediaFile = $hasMedia ? $request->file('media') : null;
+        $type = 'text';
+
+        if ($hasMedia) {
+            $mime = $mediaFile->getMimeType();
+            $type = str_starts_with($mime, 'video/') ? 'video' : 'image';
+        }
 
         $isUserSender = $conversation->user_id === $user->id;
 
-        $message = DB::transaction(function () use ($conversation, $user, $validated, $isUserSender) {
+        $message = DB::transaction(function () use ($conversation, $user, $validated, $isUserSender, $hasMedia, $mediaFile, $type) {
             $locked = Conversation::whereKey($conversation->getKey())->lockForUpdate()->first();
 
             if ($isUserSender && $user->hasReachedFreeChatQuota()) {
@@ -89,8 +99,13 @@ class ConversationController extends Controller
 
             $message = $locked->messages()->create([
                 'sender_id' => $user->id,
-                'content' => $validated['content'],
+                'content' => $validated['content'] ?? null,
+                'type' => $type,
             ]);
+
+            if ($hasMedia) {
+                $message->addMedia($mediaFile)->toMediaCollection('chat-media');
+            }
 
             if ($isUserSender) {
                 $locked->increment('message_count');
