@@ -8,6 +8,7 @@ use App\Enums\SeverityLevel;
 use App\Http\Requests\StoreScanRequest;
 use App\Http\Resources\PredictionHistoryResource;
 use App\Models\PredictionHistory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -18,11 +19,15 @@ class ScanController extends Controller
 {
     public function store(StoreScanRequest $request, SkinPredictionServiceContract $service)
     {
+        $this->assertProfileCompleteForPrediction($request->user());
+
         return $this->createPrediction($request, $service, ScanMode::UPLOAD);
     }
 
     public function storeLivecam(StoreScanRequest $request, SkinPredictionServiceContract $service)
     {
+        $this->assertProfileCompleteForPrediction($request->user());
+
         return $this->createPrediction($request, $service, ScanMode::LIVECAM);
     }
 
@@ -45,6 +50,15 @@ class ScanController extends Controller
         abort_unless($predictionHistory->user_id === $request->user()->id, 404);
 
         return new PredictionHistoryResource($predictionHistory);
+    }
+
+    private function assertProfileCompleteForPrediction(User $user): void
+    {
+        if ($user->predictionHistories()->exists()) {
+            return;
+        }
+
+        abort_unless($user->hasCompletedProfile(), 422, 'Lengkapi profil kamu terlebih dahulu (tanggal lahir dan jenis kelamin) sebelum melakukan prediksi pertama.');
     }
 
     private function createPrediction(Request $request, SkinPredictionServiceContract $service, ScanMode $mode)

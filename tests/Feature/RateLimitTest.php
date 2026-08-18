@@ -71,7 +71,10 @@ class RateLimitTest extends TestCase
 
     public function test_scan_uploads_are_throttled(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'date_of_birth' => '1995-05-15',
+            'gender' => 'perempuan',
+        ]);
         Sanctum::actingAs($user);
         $this->fakePredictionService();
 

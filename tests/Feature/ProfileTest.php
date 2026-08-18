@@ -40,6 +40,69 @@ class ProfileTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $user->id, 'full_name' => 'Updated Name']);
     }
 
+    public function test_user_can_update_profile_with_demographics(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        Sanctum::actingAs($user);
+
+        $this->patchJson('/api/v1/profile', [
+            'date_of_birth' => '1995-05-15',
+            'gender' => 'perempuan',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.date_of_birth', '1995-05-15')
+            ->assertJsonPath('data.gender', 'perempuan')
+            ->assertJsonPath('data.profile_completed', true);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'gender' => 'perempuan',
+        ]);
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'date_of_birth' => '1995-05-15 00:00:00',
+        ]);
+    }
+
+    public function test_profile_show_includes_demographics_and_completion_flag(): void
+    {
+        $user = User::factory()->create([
+            'date_of_birth' => '1990-01-01',
+            'gender' => 'laki_laki',
+        ]);
+        $user->assignRole('user');
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/profile')
+            ->assertOk()
+            ->assertJsonPath('data.date_of_birth', '1990-01-01')
+            ->assertJsonPath('data.gender', 'laki_laki')
+            ->assertJsonPath('data.profile_completed', true);
+    }
+
+    public function test_gender_validation_rejects_invalid_values(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        Sanctum::actingAs($user);
+
+        $this->patchJson('/api/v1/profile', [
+            'gender' => 'alien',
+        ])->assertUnprocessable();
+    }
+
+    public function test_date_of_birth_cannot_be_in_future(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        Sanctum::actingAs($user);
+
+        $this->patchJson('/api/v1/profile', [
+            'date_of_birth' => now()->addDay()->format('Y-m-d'),
+        ])->assertUnprocessable();
+    }
+
     public function test_user_can_soft_delete_account_and_revoke_tokens(): void
     {
         $user = User::factory()->create();

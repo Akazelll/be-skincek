@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProductGender;
 use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,7 +16,10 @@ class SkincareProduct extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'gender' => ProductGender::class,
+        ];
     }
 
     public function doctor()

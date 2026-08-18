@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Gender;
 use App\Enums\SubscriptionStatus;
 use App\Enums\VerificationStatus;
 use App\Traits\HasPublicUuid;
@@ -34,6 +35,8 @@ class User extends Authenticatable implements HasMedia
             'password' => 'hashed',
             'privacy_consent_at' => 'datetime',
             'is_active' => 'boolean',
+            'date_of_birth' => 'date',
+            'gender' => Gender::class,
         ];
     }
 
@@ -88,5 +91,10 @@ class User extends Authenticatable implements HasMedia
     public function deviceTokens()
     {
         return $this->hasMany(DeviceToken::class);
+    }
+
+    public function hasCompletedProfile(): bool
+    {
+        return $this->date_of_birth !== null && $this->gender !== null;
     }
 }

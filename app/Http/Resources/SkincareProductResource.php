@@ -13,6 +13,7 @@ class SkincareProductResource extends JsonResource
             'uuid' => $this->uuid,
             'name' => $this->name,
             'category' => $this->category,
+            'gender' => $this->gender?->value ?? 'unisex',
             'key_ingredients' => $this->key_ingredients,
             'usage_instruction' => $this->usage_instruction,
             'warning' => $this->warning,

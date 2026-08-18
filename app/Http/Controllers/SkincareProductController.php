@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProductGender;
 use App\Http\Resources\SkincareProductResource;
 use App\Models\SkincareProduct;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SkincareProductController extends Controller
 {
@@ -14,6 +16,7 @@ class SkincareProductController extends Controller
             ->where('is_active', true)
             ->when($request->input('concern'), fn ($q, $concern) => $q->where('concern_id', $concern))
             ->when($request->input('skin_type'), fn ($q, $type) => $q->where('skin_type_id', $type))
+            ->when($request->input('gender'), fn ($q, $gender) => $q->where('gender', $gender))
             ->latest()
             ->paginate($this->perPage($request));
 
@@ -39,6 +42,7 @@ class SkincareProductController extends Controller
             'skin_type_id' => ['nullable', 'exists:skin_types,id'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:255'],
+            'gender' => ['nullable', Rule::enum(ProductGender::class)],
             'key_ingredients' => ['nullable', 'string'],
             'usage_instruction' => ['required', 'string'],
             'warning' => ['nullable', 'string'],
@@ -70,6 +74,7 @@ class SkincareProductController extends Controller
             'skin_type_id' => ['nullable', 'exists:skin_types,id'],
             'name' => ['sometimes', 'string', 'max:255'],
             'category' => ['sometimes', 'string', 'max:255'],
+            'gender' => ['nullable', Rule::enum(ProductGender::class)],
             'key_ingredients' => ['nullable', 'string'],
             'usage_instruction' => ['sometimes', 'string'],
             'warning' => ['nullable', 'string'],

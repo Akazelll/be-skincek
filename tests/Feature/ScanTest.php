@@ -25,7 +25,7 @@ class ScanTest extends TestCase
 
     public function test_user_can_scan_and_severity_is_normalized(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithProfile();
         Sanctum::actingAs($user);
         $this->fakePredictionService();
 
@@ -45,7 +45,7 @@ class ScanTest extends TestCase
 
     public function test_livecam_scan_and_history_are_private(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithProfile();
         Sanctum::actingAs($user);
         $this->fakePredictionService();
 
@@ -61,6 +61,63 @@ class ScanTest extends TestCase
 
         Sanctum::actingAs(User::factory()->create());
         $this->getJson("/api/v1/scans/{$history->uuid}")->assertNotFound();
+    }
+
+    public function test_user_without_profile_cannot_scan_for_first_time(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+        $this->fakePredictionService();
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('prediction_histories', 0);
+    }
+
+    public function test_user_with_partial_profile_cannot_scan_for_first_time(): void
+    {
+        $user = User::factory()->create([
+            'date_of_birth' => '1995-05-15',
+        ]);
+        Sanctum::actingAs($user);
+        $this->fakePredictionService();
+
+        $this->postJson('/api/v1/scans/livecam', [
+            'image' => UploadedFile::fake()->image('crop.png'),
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('prediction_histories', 0);
+    }
+
+    public function test_user_can_scan_after_completing_profile(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+        $this->fakePredictionService();
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertUnprocessable();
+
+        $this->patchJson('/api/v1/profile', [
+            'date_of_birth' => '1995-05-15',
+            'gender' => 'perempuan',
+        ])->assertOk()
+            ->assertJsonPath('data.profile_completed', true);
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated();
+    }
+
+    private function makeUserWithProfile(): User
+    {
+        return User::factory()->create([
+            'date_of_birth' => '1995-05-15',
+            'gender' => 'perempuan',
+        ]);
     }
 
     private function fakePredictionService(): void

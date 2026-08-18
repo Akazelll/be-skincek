@@ -20,6 +20,9 @@ class ProfileController extends Controller
             'email' => $user->email,
             'role' => $role,
             'avatar_url' => MediaHelper::url($user->getFirstMedia('avatar')),
+            'date_of_birth' => $user->date_of_birth?->format('Y-m-d'),
+            'gender' => $user->gender?->value,
+            'profile_completed' => $user->hasCompletedProfile(),
         ];
 
         if ($role === 'user') {
@@ -49,6 +52,8 @@ class ProfileController extends Controller
             'full_name' => 'sometimes|required|string|max:255',
             'password' => 'sometimes|required|string|min:8',
             'avatar' => 'sometimes|nullable|image|max:2048',
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today'],
+            'gender' => ['sometimes', 'nullable', 'string', 'in:laki_laki,perempuan'],
         ]);
 
         if (isset($validated['full_name'])) {
@@ -57,6 +62,14 @@ class ProfileController extends Controller
 
         if (isset($validated['password'])) {
             $user->password = Hash::make($validated['password']);
+        }
+
+        if (isset($validated['date_of_birth'])) {
+            $user->date_of_birth = $validated['date_of_birth'];
+        }
+
+        if (isset($validated['gender'])) {
+            $user->gender = $validated['gender'];
         }
 
         if ($request->hasFile('avatar')) {
@@ -69,6 +82,9 @@ class ProfileController extends Controller
             'uuid' => $user->uuid,
             'full_name' => $user->full_name,
             'avatar_url' => MediaHelper::url($user->getFirstMedia('avatar')),
+            'date_of_birth' => $user->date_of_birth?->format('Y-m-d'),
+            'gender' => $user->gender?->value,
+            'profile_completed' => $user->hasCompletedProfile(),
         ], ['message' => 'Profil berhasil diperbarui']);
     }
 
