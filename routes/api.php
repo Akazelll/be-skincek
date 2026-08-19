@@ -46,7 +46,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot-password');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:reset-password');
 
-    Route::post('/webhooks/midtrans', [WebhookController::class, 'handleMidtrans']);
+    Route::match(['get', 'post'], '/webhooks/midtrans', [WebhookController::class, 'handleMidtrans']);
 
     // Catalog (public read)
     Route::get('/skincare-products', [SkincareProductController::class, 'index']);

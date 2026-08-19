@@ -25,6 +25,7 @@ class User extends Authenticatable implements HasMedia
         'password',
         'remember_token',
         'google_id',
+        'media',
     ];
 
     protected $appends = ['avatar_url'];

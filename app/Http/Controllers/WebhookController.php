@@ -12,6 +12,10 @@ class WebhookController extends Controller
 {
     public function handleMidtrans(Request $request, MidtransService $midtrans)
     {
+        if ($request->isMethod('get')) {
+            return $this->successResponse(null, ['message' => 'ok']);
+        }
+
         $request->validate([
             'order_id' => ['required', 'string'],
             'status_code' => ['required', 'string'],

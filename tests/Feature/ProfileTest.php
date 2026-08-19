@@ -134,7 +134,7 @@ class ProfileTest extends TestCase
 
         $this->assertDatabaseCount('media', 1);
         $this->assertNotNull($user->fresh()->avatar_updated_at);
-        Storage::disk('public')->assertExists($user->getFirstMedia('avatar')->getPathRelativeToRoot());
+        $this->assertTrue(Storage::disk('public')->exists($user->getFirstMedia('avatar')->getPathRelativeToRoot()));
     }
 
     public function test_avatar_upload_rate_limited_once_per_day(): void
