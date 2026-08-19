@@ -33,7 +33,7 @@ class AdminController extends Controller
 
     public function listUsers(Request $request)
     {
-        $users = User::with('roles')
+        $users = User::with(['roles', 'media'])
             ->when($request->input('role'), function ($query, $role) {
                 $query->role($role);
             })

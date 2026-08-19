@@ -164,6 +164,7 @@ class AuthController extends Controller
 
                     $user = User::create([
                         'google_id' => $payload['sub'],
+                        'google_avatar_url' => $payload['picture'] ?? null,
                         'full_name' => $payload['name'] ?? $payload['email'],
                         'email' => $payload['email'],
                         'email_verified_at' => now(),
@@ -175,6 +176,10 @@ class AuthController extends Controller
                 } else {
                     $user->update(['google_id' => $payload['sub'], 'email_verified_at' => $user->email_verified_at ?? now()]);
                 }
+            }
+
+            if (! empty($payload['picture'])) {
+                $user->forceFill(['google_avatar_url' => $payload['picture']])->save();
             }
 
             return $user;

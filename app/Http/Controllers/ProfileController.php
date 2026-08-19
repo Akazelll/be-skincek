@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\DoctorVerification;
-use App\Support\MediaHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,7 +18,8 @@ class ProfileController extends Controller
             'full_name' => $user->full_name,
             'email' => $user->email,
             'role' => $role,
-            'avatar_url' => MediaHelper::url($user->getFirstMedia('avatar')),
+            'avatar_url' => $user->avatarUrl(),
+            'google_avatar_url' => $user->google_avatar_url,
             'date_of_birth' => $user->date_of_birth?->format('Y-m-d'),
             'gender' => $user->gender?->value,
             'profile_completed' => $user->hasCompletedProfile(),
@@ -73,7 +73,11 @@ class ProfileController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
+            abort_unless($user->canChangeAvatar(), 422, 'Kamu hanya dapat mengganti foto profil maksimal 1x dalam 24 jam');
+
             $user->addMediaFromRequest('avatar')->toMediaCollection('avatar');
+            $user->markAvatarChanged();
+            $user->unsetRelation('media');
         }
 
         $user->save();
@@ -81,11 +85,26 @@ class ProfileController extends Controller
         return $this->successResponse([
             'uuid' => $user->uuid,
             'full_name' => $user->full_name,
-            'avatar_url' => MediaHelper::url($user->getFirstMedia('avatar')),
+            'avatar_url' => $user->avatarUrl(),
+            'google_avatar_url' => $user->google_avatar_url,
             'date_of_birth' => $user->date_of_birth?->format('Y-m-d'),
             'gender' => $user->gender?->value,
             'profile_completed' => $user->hasCompletedProfile(),
         ], ['message' => 'Profil berhasil diperbarui']);
+    }
+
+    public function destroyAvatar(Request $request)
+    {
+        $user = $request->user();
+
+        $user->clearMediaCollection('avatar');
+        $user->forceFill(['avatar_updated_at' => null])->save();
+        $user->unsetRelation('media');
+
+        return $this->successResponse([
+            'avatar_url' => $user->avatarUrl(),
+            'google_avatar_url' => $user->google_avatar_url,
+        ], ['message' => 'Foto profil berhasil dihapus']);
     }
 
     public function destroy(Request $request)

@@ -98,6 +98,21 @@ class GoogleAuthTest extends TestCase
             ->assertTooManyRequests();
     }
 
+    public function test_google_avatar_picture_is_saved_and_returned(): void
+    {
+        $this->fakeVerifier();
+
+        $this->postJson('/api/v1/auth/google', [
+            'id_token' => 'valid-token',
+            'privacy_consent' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.user.avatar_url', 'https://example.com/photo.jpg');
+
+        $user = User::where('email', 'google@example.com')->firstOrFail();
+        $this->assertSame('https://example.com/photo.jpg', $user->google_avatar_url);
+    }
+
     private function fakeVerifier(): void
     {
         $this->app->instance(GoogleTokenVerifierContract::class, new class implements GoogleTokenVerifierContract
@@ -110,6 +125,7 @@ class GoogleAuthTest extends TestCase
                     'email' => 'google@example.com',
                     'email_verified' => true,
                     'name' => 'Google User',
+                    'picture' => 'https://example.com/photo.jpg',
                 ];
             }
         });

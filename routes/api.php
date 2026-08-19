@@ -66,6 +66,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::patch('/profile', [ProfileController::class, 'update']);
         Route::delete('/profile', [ProfileController::class, 'destroy']);
+        Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar']);
 
         Route::get('/login-activity', [LoginActivityController::class, 'index']);
         Route::delete('/login-activity/{personalAccessToken}', [LoginActivityController::class, 'destroy']);

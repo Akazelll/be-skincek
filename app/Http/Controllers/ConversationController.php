@@ -49,7 +49,7 @@ class ConversationController extends Controller
         $user = $request->user();
 
         $conversations = Conversation::query()
-            ->with(['user.roles', 'doctor.roles', 'messages' => fn ($query) => $query->with('sender.roles')->latest()->limit(1)])
+            ->with(['user.roles', 'user.media', 'doctor.roles', 'doctor.media', 'messages' => fn ($query) => $query->with('sender.roles', 'sender.media')->latest()->limit(1)])
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('doctor_id', $user->id))
             ->latest()
             ->paginate($this->perPage($request));
@@ -62,7 +62,7 @@ class ConversationController extends Controller
         $this->assertParticipant($request->user(), $conversation);
 
         $messages = $conversation->messages()
-            ->with('sender.roles')
+            ->with('sender.roles', 'sender.media')
             ->latest()
             ->paginate($this->perPage($request));
 

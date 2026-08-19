@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Gender;
 use App\Enums\SubscriptionStatus;
 use App\Enums\VerificationStatus;
+use App\Support\MediaHelper;
 use App\Traits\HasPublicUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -26,6 +27,8 @@ class User extends Authenticatable implements HasMedia
         'google_id',
     ];
 
+    protected $appends = ['avatar_url'];
+
     protected $guarded = ['id'];
 
     protected function casts(): array
@@ -37,7 +40,13 @@ class User extends Authenticatable implements HasMedia
             'is_active' => 'boolean',
             'date_of_birth' => 'date',
             'gender' => Gender::class,
+            'avatar_updated_at' => 'datetime',
         ];
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatarUrl();
     }
 
     public function registerMediaCollections(): void
@@ -96,5 +105,23 @@ class User extends Authenticatable implements HasMedia
     public function hasCompletedProfile(): bool
     {
         return $this->date_of_birth !== null && $this->gender !== null;
+    }
+
+    public function avatarUrl(): ?string
+    {
+        $media = $this->getFirstMedia('avatar');
+
+        return $media ? MediaHelper::url($media) : $this->google_avatar_url;
+    }
+
+    public function canChangeAvatar(): bool
+    {
+        return $this->avatar_updated_at === null
+            || $this->avatar_updated_at->lte(now()->subDay());
+    }
+
+    public function markAvatarChanged(): void
+    {
+        $this->forceFill(['avatar_updated_at' => now()])->save();
     }
 }
