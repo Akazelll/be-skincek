@@ -2,9 +2,9 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
-use Str;
 
 class UuidPathGenerator extends DefaultPathGenerator
 {
