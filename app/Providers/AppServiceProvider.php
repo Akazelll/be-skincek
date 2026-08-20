@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Contracts\AiChatServiceContract;
 use App\Contracts\GoogleTokenVerifierContract;
 use App\Contracts\IpLocationResolverContract;
 use App\Contracts\PushNotificationServiceContract;
 use App\Contracts\SkinPredictionServiceContract;
 use App\Models\PersonalAccessToken;
+use App\Services\AiChatService;
 use App\Services\FcmPushNotificationService;
 use App\Services\GoogleTokenVerifier;
 use App\Services\HttpSkinPredictionService;
@@ -39,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(PushNotificationServiceContract::class, FcmPushNotificationService::class);
+
+        $this->app->bind(AiChatServiceContract::class, AiChatService::class);
     }
 
     /**

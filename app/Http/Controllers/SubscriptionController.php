@@ -34,15 +34,18 @@ class SubscriptionController extends Controller
     {
         $user = $request->user();
 
+        abort_unless($user->hasVerifiedEmail(), 403, 'Verifikasi email terlebih dahulu sebelum berlangganan.');
+
         if ($user->hasActiveSubscription()) {
             return $this->errorResponse('Kamu sudah berlangganan SkinCek Pro', 422);
         }
 
-        $planCode = 'pro_lifetime';
+        $planCode = 'pro_monthly';
         $plan = config("plans.$planCode");
 
         $subscription = $user->subscriptions()->create([
             'plan_code' => $planCode,
+            'period' => $plan['period'],
             'status' => SubscriptionStatus::PENDING,
             'amount' => $plan['price'],
             'currency' => $plan['currency'],
@@ -62,7 +65,7 @@ class SubscriptionController extends Controller
                     'id' => $planCode,
                     'price' => $plan['price'],
                     'quantity' => 1,
-                    'name' => 'SkinCek Pro (Lifetime)',
+                    'name' => 'SkinCek Pro (Bulanan)',
                 ]],
                 'customer_details' => [
                     'first_name' => $user->full_name,
@@ -86,5 +89,27 @@ class SubscriptionController extends Controller
             'redirect_url' => $response->redirect_url,
             'subscription' => new SubscriptionResource($subscription),
         ], ['message' => 'Transaksi pembayaran berhasil dibuat'], 201);
+    }
+
+    public function cancel(Request $request, Subscription $subscription)
+    {
+        abort_unless($subscription->user_id === $request->user()->id, 404);
+
+        if ($subscription->status !== SubscriptionStatus::ACTIVE) {
+            return $this->errorResponse('Langganan tidak dapat dibatalkan', 422);
+        }
+
+        $subscription->update(['status' => SubscriptionStatus::CANCELLED]);
+
+        activity()
+            ->useLog('subscription_cancelled')
+            ->performedOn($subscription)
+            ->causedBy($request->user())
+            ->log('Subscription cancelled by user');
+
+        return $this->successResponse(
+            new SubscriptionResource($subscription),
+            ['message' => 'Langganan berhasil dibatalkan']
+        );
     }
 }

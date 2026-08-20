@@ -6,8 +6,10 @@ use App\Enums\VerificationStatus;
 use App\Events\DoctorVerificationReviewed;
 use App\Http\Resources\DoctorVerificationResource;
 use App\Models\DoctorVerification;
+use App\Notifications\AppNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 class DoctorVerificationController extends Controller
@@ -188,6 +190,20 @@ class DoctorVerificationController extends Controller
         ]);
 
         DoctorVerificationReviewed::dispatch($doctorVerification->fresh()->load('doctor'));
+
+        Notification::send($doctorVerification->doctor, new AppNotification(
+            'Verifikasi dokter '.match ($status) {
+                VerificationStatus::APPROVED => 'disetujui',
+                VerificationStatus::REJECTED => 'ditolak',
+                VerificationStatus::NEEDS_REVISION => 'perlu revisi',
+            },
+            match ($status) {
+                VerificationStatus::APPROVED => 'Selamat! Kamu kini terverifikasi sebagai dokter di SkinCek.',
+                VerificationStatus::REJECTED => $doctorVerification->rejection_reason ?? 'Pengajuan kamu ditolak.',
+                VerificationStatus::NEEDS_REVISION => $doctorVerification->revision_note ?? 'Silakan perbaiki data verifikasi kamu.',
+            },
+            ['verification_status' => $status->value],
+        ));
 
         activity()
             ->useLog('doctor_verification_review')

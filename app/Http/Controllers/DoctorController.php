@@ -16,6 +16,9 @@ class DoctorController extends Controller
             ->whereHas('doctorVerification', fn ($query) => $query
                 ->where('verification_status', VerificationStatus::APPROVED))
             ->with(['doctorVerification', 'media'])
+            ->withCount(['doctorRatings as doctor_rating_count'])
+            ->withAvg(['doctorRatings as doctor_rating_avg'], 'rating')
+            ->orderByRaw('ai_bot DESC')
             ->latest()
             ->paginate($this->perPage($request));
 
@@ -30,6 +33,9 @@ class DoctorController extends Controller
             $doctor->doctorVerification && $doctor->doctorVerification->verification_status === VerificationStatus::APPROVED,
             404
         );
+
+        $doctor->loadCount(['doctorRatings as doctor_rating_count']);
+        $doctor->loadAvg(['doctorRatings as doctor_rating_avg'], 'rating');
 
         return new DoctorResource($doctor);
     }

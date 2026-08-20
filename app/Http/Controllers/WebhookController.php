@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Enums\SubscriptionStatus;
+use App\Mail\PaymentFailedMail;
+use App\Mail\PaymentSuccessMail;
 use App\Models\Subscription;
+use App\Notifications\AppNotification;
 use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 
 class WebhookController extends Controller
 {
@@ -43,12 +48,23 @@ class WebhookController extends Controller
 
         $target = $this->mapTransactionStatus($payload);
 
-        DB::transaction(function () use ($subscription, $target, $payload) {
+        $changed = false;
+
+        DB::transaction(function () use ($subscription, $target, $payload, &$changed) {
             $locked = Subscription::whereKey($subscription->getKey())->lockForUpdate()->first();
 
-            if ($locked->status === $target || $locked->status === SubscriptionStatus::ACTIVE) {
+            if ($locked->status === $target) {
                 return;
             }
+
+            $isRefund = $locked->status === SubscriptionStatus::ACTIVE
+                && ($payload['transaction_status'] ?? '') === 'refund';
+
+            if ($locked->status === SubscriptionStatus::ACTIVE && ! $isRefund) {
+                return;
+            }
+
+            $changed = true;
 
             $locked->status = $target;
             $locked->transaction_id = $payload['transaction_id'] ?? $locked->transaction_id;
@@ -56,12 +72,42 @@ class WebhookController extends Controller
 
             if ($target === SubscriptionStatus::ACTIVE) {
                 $locked->starts_at = now();
-                $locked->ends_at = null;
                 $locked->paid_at = now();
+
+                $durationDays = (int) config("plans.{$locked->plan_code}.duration_days", 30);
+
+                $locked->ends_at = $locked->period === 'lifetime'
+                    ? null
+                    : (($locked->ends_at?->isFuture() ? $locked->ends_at : now()))->copy()->addDays($durationDays);
+            }
+
+            if ($isRefund) {
+                $locked->ends_at = now();
             }
 
             $locked->save();
         });
+
+        if ($changed) {
+            if ($target === SubscriptionStatus::ACTIVE) {
+                Notification::send($subscription->user, new AppNotification(
+                    'Pembayaran berhasil',
+                    'Selamat, langganan SkinCek Pro kamu sudah aktif.',
+                    ['subscription_id' => $subscription->uuid],
+                ));
+
+                Mail::to($subscription->user)->send(new PaymentSuccessMail($subscription->fresh(['user'])));
+            } elseif ($target === SubscriptionStatus::CANCELLED || $target === SubscriptionStatus::EXPIRED) {
+                $reason = match (true) {
+                    ($payload['transaction_status'] ?? '') === 'expire' => 'Pembayaran kedaluwarsa sebelum diselesaikan.',
+                    ($payload['transaction_status'] ?? '') === 'deny' => 'Pembayaran ditolak oleh bank atau penyedia pembayaran.',
+                    ($payload['transaction_status'] ?? '') === 'refund' => 'Pembayaran telah dikembalikan (refund).',
+                    default => 'Pembayaran dibatalkan sebelum diselesaikan.',
+                };
+
+                Mail::to($subscription->user)->send(new PaymentFailedMail($subscription->fresh(['user']), $reason));
+            }
+        }
 
         return $this->successResponse(null, ['message' => 'ok']);
     }
@@ -75,7 +121,7 @@ class WebhookController extends Controller
             $status === 'settlement' => SubscriptionStatus::ACTIVE,
             $status === 'capture' && $fraud === 'accept' => SubscriptionStatus::ACTIVE,
             $status === 'expire' => SubscriptionStatus::EXPIRED,
-            $status === 'cancel', $status === 'deny' => SubscriptionStatus::CANCELLED,
+            $status === 'cancel', $status === 'deny', $status === 'refund' => SubscriptionStatus::CANCELLED,
             default => SubscriptionStatus::PENDING,
         };
     }

@@ -39,6 +39,7 @@ class User extends Authenticatable implements HasMedia
             'password' => 'hashed',
             'privacy_consent_at' => 'datetime',
             'is_active' => 'boolean',
+            'ai_bot' => 'boolean',
             'date_of_birth' => 'date',
             'gender' => Gender::class,
             'avatar_updated_at' => 'datetime',
@@ -60,10 +61,31 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(Subscription::class);
     }
 
+    public function aiChatConsents()
+    {
+        return $this->hasMany(AiChatConsent::class);
+    }
+
+    public function hasConsentedToAiChat(): bool
+    {
+        return $this->aiChatConsents()
+            ->where('consent_version', config('ai.consent_version'))
+            ->exists();
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified_at !== null;
+    }
+
     public function hasActiveSubscription(): bool
     {
         return $this->subscriptions()
             ->where('status', SubscriptionStatus::ACTIVE)
+            ->where(fn ($query) => $query
+                ->where('period', 'lifetime')
+                ->orWhereNull('ends_at')
+                ->orWhere('ends_at', '>=', now()))
             ->exists();
     }
 
@@ -101,6 +123,11 @@ class User extends Authenticatable implements HasMedia
     public function deviceTokens()
     {
         return $this->hasMany(DeviceToken::class);
+    }
+
+    public function doctorRatings()
+    {
+        return $this->hasMany(DoctorRating::class, 'doctor_id');
     }
 
     public function hasCompletedProfile(): bool

@@ -12,6 +12,7 @@ class SubscriptionResource extends JsonResource
         return [
             'uuid' => $this->uuid,
             'plan_code' => $this->plan_code,
+            'period' => $this->period,
             'status' => $this->status->value,
             'amount' => $this->amount,
             'currency' => $this->currency,

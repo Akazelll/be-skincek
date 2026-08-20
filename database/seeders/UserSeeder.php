@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\VerificationStatus;
+use App\Models\DoctorVerification;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -43,5 +45,26 @@ class UserSeeder extends Seeder
             'is_active' => true,
         ]);
         $user->assignRole('user');
+
+        $aura = User::firstOrCreate(
+            ['email' => config('ai.bot_email', 'aura@skincek.com')],
+            [
+                'uuid' => Str::uuid(),
+                'full_name' => 'Aura Skin',
+                'password' => Hash::make(Str::random(32)),
+                'email_verified_at' => now(),
+                'privacy_consent_at' => now(),
+                'is_active' => true,
+                'ai_bot' => true,
+            ]
+        );
+        $aura->assignRole('doctor');
+        DoctorVerification::firstOrCreate(
+            ['doctor_id' => $aura->id],
+            [
+                'specialization' => 'Asisten Kecerdasan Buatan SkinCek',
+                'verification_status' => VerificationStatus::APPROVED,
+            ]
+        );
     }
 }

@@ -41,7 +41,7 @@ class MidtransTest extends TestCase
         $this->postJson('/api/v1/subscriptions/checkout')
             ->assertCreated()
             ->assertJsonPath('data.snap_token', 'snap-token-123')
-            ->assertJsonPath('data.subscription.plan_code', 'pro_lifetime')
+            ->assertJsonPath('data.subscription.plan_code', 'pro_monthly')
             ->assertJsonPath('data.subscription.status', 'pending')
             ->assertJsonPath('data.subscription.amount', 15000)
             ->assertJsonPath('data.subscription.currency', 'IDR');
@@ -226,6 +226,109 @@ class MidtransTest extends TestCase
 
         $this->postJson('/api/v1/webhooks/midtrans', $payload)
             ->assertOk();
+    }
+
+    public function test_webhook_settlement_sets_monthly_ends_at(): void
+    {
+        $user = User::factory()->create();
+        $subscription = Subscription::create([
+            'user_id' => $user->id,
+            'plan_code' => 'pro_monthly',
+            'period' => 'monthly',
+            'status' => 'pending',
+            'amount' => 15000,
+            'currency' => 'IDR',
+            'midtrans_order_id' => 'SKINCEK-MONTH1',
+        ]);
+
+        $payload = [
+            'order_id' => 'SKINCEK-MONTH1',
+            'status_code' => '200',
+            'gross_amount' => '15000.00',
+            'transaction_status' => 'settlement',
+            'signature_key' => hash('sha512', 'SKINCEK-MONTH1'.'200'.'15000.00'.self::SERVER_KEY),
+        ];
+
+        $this->postJson('/api/v1/webhooks/midtrans', $payload)->assertOk();
+
+        $subscription->refresh();
+        $this->assertSame('active', $subscription->status->value);
+        $this->assertTrue($subscription->ends_at !== null);
+        $this->assertTrue($subscription->ends_at->between(now()->addDays(29), now()->addDays(31)));
+        $this->assertTrue($user->fresh()->hasActiveSubscription());
+    }
+
+    public function test_renewal_settlement_extends_existing_ends_at(): void
+    {
+        $user = User::factory()->create();
+        $subscription = Subscription::create([
+            'user_id' => $user->id,
+            'plan_code' => 'pro_monthly',
+            'period' => 'monthly',
+            'status' => 'pending',
+            'amount' => 15000,
+            'currency' => 'IDR',
+            'midtrans_order_id' => 'SKINCEK-MONTH2',
+            'ends_at' => now()->addDays(10),
+        ]);
+
+        $payload = [
+            'order_id' => 'SKINCEK-MONTH2',
+            'status_code' => '200',
+            'gross_amount' => '15000.00',
+            'transaction_status' => 'settlement',
+            'signature_key' => hash('sha512', 'SKINCEK-MONTH2'.'200'.'15000.00'.self::SERVER_KEY),
+        ];
+
+        $this->postJson('/api/v1/webhooks/midtrans', $payload)->assertOk();
+
+        $subscription->refresh();
+        $this->assertTrue($subscription->ends_at->between(now()->addDays(39), now()->addDays(41)));
+    }
+
+    public function test_expired_monthly_subscription_no_longer_grants_benefits(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        Subscription::create([
+            'user_id' => $user->id,
+            'plan_code' => 'pro_monthly',
+            'period' => 'monthly',
+            'status' => 'active',
+            'amount' => 15000,
+            'currency' => 'IDR',
+            'ends_at' => now()->subDay(),
+        ]);
+
+        $this->assertFalse($user->hasActiveSubscription());
+    }
+
+    public function test_expire_command_marks_past_due_subscriptions_as_expired(): void
+    {
+        $user = User::factory()->create();
+        Subscription::create([
+            'user_id' => $user->id,
+            'plan_code' => 'pro_monthly',
+            'period' => 'monthly',
+            'status' => 'active',
+            'amount' => 15000,
+            'currency' => 'IDR',
+            'ends_at' => now()->subDay(),
+        ]);
+        Subscription::create([
+            'user_id' => $user->id,
+            'plan_code' => 'pro_monthly',
+            'period' => 'monthly',
+            'status' => 'active',
+            'amount' => 15000,
+            'currency' => 'IDR',
+            'ends_at' => now()->addDays(10),
+        ]);
+
+        $this->artisan('subscriptions:expire')->assertSuccessful();
+
+        $this->assertSame(1, Subscription::where('status', 'expired')->count());
+        $this->assertSame(1, Subscription::where('status', 'active')->count());
     }
 
     public function test_webhook_expire_marks_subscription_expired(): void

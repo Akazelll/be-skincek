@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\DoctorRatingController;
 use App\Http\Controllers\DoctorVerificationController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\LoginActivityController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScanController;
@@ -45,6 +49,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot-password');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:reset-password');
 
+    Route::get('/emergency', fn () => response()->json([
+        'data' => config('emergency.hotlines', []),
+        'meta' => (object) [],
+    ]));
+
     Route::match(['get', 'post'], '/webhooks/midtrans', [WebhookController::class, 'handleMidtrans']);
 
     // Catalog (public read)
@@ -62,25 +71,44 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
 
+        Route::post('/email/verify/send', [EmailVerificationController::class, 'send']);
+        Route::post('/email/verify', [EmailVerificationController::class, 'verify']);
+
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::patch('/profile', [ProfileController::class, 'update']);
         Route::delete('/profile', [ProfileController::class, 'destroy']);
         Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar']);
+        Route::post('/profile/export', [ProfileController::class, 'export']);
+        Route::get('/profile/exports/download', [ProfileController::class, 'downloadExport'])->name('profile.export.download');
+
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+        Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+
+        Route::get('/ai-chat/consent', [AiChatController::class, 'consent']);
+        Route::post('/ai-chat/consent', [AiChatController::class, 'updateConsent']);
+        Route::post('/ai-chat/conversations', [AiChatController::class, 'startConversation']);
+        Route::delete('/ai-chat/conversations/{conversation}', [AiChatController::class, 'destroyConversation']);
 
         Route::get('/login-activity', [LoginActivityController::class, 'index']);
         Route::delete('/login-activity/{personalAccessToken}', [LoginActivityController::class, 'destroy']);
 
         Route::get('/doctors', [DoctorController::class, 'index'])->name('doctors.index');
         Route::get('/doctors/{doctor}', [DoctorController::class, 'show'])->name('doctors.show');
+        Route::post('/doctors/{doctor}/ratings', [DoctorRatingController::class, 'store']);
+        Route::get('/doctors/{doctor}/ratings', [DoctorRatingController::class, 'index']);
 
         Route::get('/subscriptions', [SubscriptionController::class, 'index']);
         Route::post('/subscriptions/checkout', [SubscriptionController::class, 'checkout']);
         Route::get('/subscriptions/{subscription}/receipt', [SubscriptionController::class, 'receipt']);
+        Route::post('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
 
         Route::get('/scans', [ScanController::class, 'index']);
         Route::post('/scans', [ScanController::class, 'store'])->middleware('throttle:scans');
         Route::post('/scans/livecam', [ScanController::class, 'storeLivecam'])->middleware('throttle:scans');
         Route::get('/scans/{predictionHistory}', [ScanController::class, 'show']);
+        Route::post('/scans/{predictionHistory}/feedback', [ScanController::class, 'feedback']);
 
         Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
         Route::delete('/device-tokens/{deviceToken}', [DeviceTokenController::class, 'destroy']);

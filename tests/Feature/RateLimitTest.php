@@ -75,6 +75,12 @@ class RateLimitTest extends TestCase
             'date_of_birth' => '1995-05-15',
             'gender' => 'perempuan',
         ]);
+        $user->subscriptions()->create([
+            'plan_code' => 'pro_lifetime',
+            'status' => 'active',
+            'amount' => 15000,
+            'currency' => 'IDR',
+        ]);
         Sanctum::actingAs($user);
         $this->fakePredictionService();
 

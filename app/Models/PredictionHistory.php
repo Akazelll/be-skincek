@@ -32,4 +32,14 @@ class PredictionHistory extends Model implements HasMedia
         $this->addMediaCollection('scan-photo')->singleFile();
         $this->addMediaCollection('scan-photo-cropped')->singleFile();
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function feedbacks()
+    {
+        return $this->hasMany(PredictionFeedback::class);
+    }
 }

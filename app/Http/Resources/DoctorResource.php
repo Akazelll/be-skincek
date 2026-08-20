@@ -17,6 +17,9 @@ class DoctorResource extends JsonResource
             'title' => $verification?->title,
             'specialization' => $verification?->specialization,
             'avatar' => $this->getFirstMediaUrl('avatar'),
+            'rating_avg' => $this->doctor_rating_avg ?? null,
+            'rating_count' => $this->doctor_rating_count ?? 0,
+            'is_ai_bot' => (bool) $this->ai_bot,
         ];
 
         if ($request->routeIs('doctors.show')) {

@@ -7,12 +7,17 @@ use App\Enums\ScanMode;
 use App\Enums\SeverityLevel;
 use App\Http\Requests\StoreScanRequest;
 use App\Http\Resources\PredictionHistoryResource;
+use App\Mail\ScanCompleteMail;
+use App\Models\PredictionFeedback;
 use App\Models\PredictionHistory;
 use App\Models\User;
+use App\Support\ImageExifStripper;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -21,14 +26,18 @@ class ScanController extends Controller
 {
     public function store(StoreScanRequest $request, SkinPredictionServiceContract $service)
     {
+        $this->assertEmailVerified($request->user());
         $this->assertProfileCompleteForPrediction($request->user());
+        $this->assertWithinFreeScanQuota($request->user());
 
         return $this->createPrediction($request, $service, ScanMode::UPLOAD);
     }
 
     public function storeLivecam(StoreScanRequest $request, SkinPredictionServiceContract $service)
     {
+        $this->assertEmailVerified($request->user());
         $this->assertProfileCompleteForPrediction($request->user());
+        $this->assertWithinFreeScanQuota($request->user());
 
         return $this->createPrediction($request, $service, ScanMode::LIVECAM);
     }
@@ -52,6 +61,25 @@ class ScanController extends Controller
         abort_unless($predictionHistory->user_id === $request->user()->id, 404);
 
         return new PredictionHistoryResource($predictionHistory);
+    }
+
+    private function assertEmailVerified(User $user): void
+    {
+        abort_unless($user->hasVerifiedEmail(), 403, 'Verifikasi email terlebih dahulu sebelum menggunakan fitur ini.');
+    }
+
+    private function assertWithinFreeScanQuota(User $user): void
+    {
+        if ($user->hasActiveSubscription()) {
+            return;
+        }
+
+        $limit = config('services.ml.free_scan_limit', 3);
+        $todayCount = $user->predictionHistories()
+            ->whereDate('created_at', today())
+            ->count();
+
+        abort_unless($todayCount < $limit, 429, "Kamu sudah mencapai {$limit} scan gratis hari ini. Upgrade ke SkinCek Pro untuk scan tanpa batas.");
     }
 
     private function assertProfileCompleteForPrediction(User $user): void
@@ -104,11 +132,44 @@ class ScanController extends Controller
             ]);
 
             $collection = $mode === ScanMode::LIVECAM ? 'scan-photo-cropped' : 'scan-photo';
-            $history->addMedia($request->file('image'))->toMediaCollection($collection);
+            $history->addMedia(ImageExifStripper::strip($request->file('image')))->toMediaCollection($collection);
 
             return $history;
         });
 
+        $this->notifyScanComplete($request->user(), $history);
+
         return (new PredictionHistoryResource($history))->response()->setStatusCode(201);
+    }
+
+    private function notifyScanComplete(User $user, PredictionHistory $history): void
+    {
+        $key = 'scan-email-sent:'.$user->id.':'.now()->toDateString();
+
+        if (Cache::has($key)) {
+            return;
+        }
+
+        Cache::put($key, true, now()->endOfDay());
+
+        Mail::to($user)->send(new ScanCompleteMail($history));
+    }
+
+    public function feedback(Request $request, PredictionHistory $predictionHistory)
+    {
+        abort_unless($predictionHistory->user_id === $request->user()->id, 404);
+
+        $validated = $request->validate([
+            'is_accurate' => ['required', 'boolean'],
+        ]);
+
+        $feedback = PredictionFeedback::updateOrCreate(
+            ['prediction_history_id' => $predictionHistory->id, 'user_id' => $request->user()->id],
+            ['is_accurate' => $validated['is_accurate']]
+        );
+
+        return $this->successResponse([
+            'is_accurate' => (bool) $feedback->is_accurate,
+        ], ['message' => 'Terima kasih atas masukan Anda']);
     }
 }
