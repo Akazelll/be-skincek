@@ -9,6 +9,8 @@ use App\Http\Requests\StoreScanRequest;
 use App\Http\Resources\PredictionHistoryResource;
 use App\Models\PredictionHistory;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -63,11 +65,23 @@ class ScanController extends Controller
 
     private function createPrediction(Request $request, SkinPredictionServiceContract $service, ScanMode $mode)
     {
-        $result = $service->predict(
-            $request->file('image')->getRealPath(),
-            $mode === ScanMode::LIVECAM,
-            $request->file('image')->getClientOriginalName(),
-        );
+        try {
+            $result = $service->predict(
+                $request->file('image')->getRealPath(),
+                $mode === ScanMode::LIVECAM,
+                $request->file('image')->getClientOriginalName(),
+            );
+        } catch (ConnectionException) {
+            return $this->errorResponse('Layanan prediksi sedang sibuk, coba lagi nanti', 502);
+        } catch (RequestException $e) {
+            $detail = data_get($e->response?->json(), 'detail');
+
+            return $this->errorResponse(
+                is_string($detail) && $detail !== '' ? $detail : 'Prediksi gagal, coba lagi nanti',
+                $e->response ? $e->response->status() : 502,
+            );
+        }
+
         validator($result, [
             'predicted_class' => ['required', 'string'],
             'confidence' => ['required', 'numeric', 'between:0,1'],

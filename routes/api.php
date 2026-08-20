@@ -21,9 +21,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => response()->json([
     'data' => [
         'name' => config('app.name'),
+        'version' => 'v1',
         'status' => 'ok',
-        'current_version' => 'v1',
-        'version_url' => url('/api/v1'),
     ],
     'meta' => (object) [],
 ]));

@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Contracts\SkinPredictionServiceContract;
 use App\Models\PredictionHistory;
 use App\Models\User;
+use App\Services\HttpSkinPredictionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -110,6 +112,47 @@ class ScanTest extends TestCase
         $this->postJson('/api/v1/scans', [
             'image' => UploadedFile::fake()->image('face.jpg'),
         ])->assertCreated();
+    }
+
+    public function test_scan_without_face_returns_ml_error_message(): void
+    {
+        $user = $this->makeUserWithProfile();
+        Sanctum::actingAs($user);
+
+        config(['services.ml.url' => 'http://ml.test']);
+        $this->app->instance(SkinPredictionServiceContract::class, new HttpSkinPredictionService);
+
+        Http::fake([
+            'http://ml.test/predict' => Http::response([
+                'detail' => 'Wajah tidak terdeteksi. Silakan upload foto wajah yang jelas dan menghadap kamera.',
+            ], 422),
+        ]);
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'Wajah tidak terdeteksi. Silakan upload foto wajah yang jelas dan menghadap kamera.');
+
+        $this->assertDatabaseCount('prediction_histories', 0);
+    }
+
+    public function test_scan_when_ml_service_down_returns_502(): void
+    {
+        $user = $this->makeUserWithProfile();
+        Sanctum::actingAs($user);
+
+        config(['services.ml.url' => 'http://ml.test']);
+        $this->app->instance(SkinPredictionServiceContract::class, new HttpSkinPredictionService);
+
+        Http::fake([
+            'http://ml.test/predict' => Http::response(null, 503),
+        ]);
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertStatus(503);
+
+        $this->assertDatabaseCount('prediction_histories', 0);
     }
 
     private function makeUserWithProfile(): User
