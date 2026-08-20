@@ -482,7 +482,7 @@ class ChatTest extends TestCase
         Queue::assertPushed(BroadcastEvent::class, function (BroadcastEvent $job) {
             $payload = $job->event->broadcastWith();
 
-            return $payload['message']['message_type'] === 'image'
+            return $payload['message']['type'] === 'image'
                 && isset($payload['message']['media_url']);
         });
     }

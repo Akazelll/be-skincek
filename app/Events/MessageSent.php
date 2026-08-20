@@ -46,7 +46,7 @@ class MessageSent implements ShouldBroadcast
                     'role' => $sender->roles->first()?->name,
                 ],
                 'content' => $this->message->content,
-                'message_type' => $this->message->type ?? 'text',
+                'type' => $this->message->type ?? 'text',
                 'media_url' => MediaHelper::url($media),
                 'created_at' => $this->message->created_at?->toISOString(),
             ],
