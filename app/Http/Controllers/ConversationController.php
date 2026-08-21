@@ -10,6 +10,7 @@ use App\Jobs\GenerateAiReply;
 use App\Mail\MessageNotificationMail;
 use App\Models\Conversation;
 use App\Models\DoctorVerification;
+use App\Models\PredictionHistory;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use App\Support\ImageExifStripper;
@@ -82,8 +83,9 @@ class ConversationController extends Controller
         $this->assertParticipant($user, $conversation);
 
         $validated = $request->validate([
-            'content' => ['required_without:media', 'nullable', 'string', 'max:5000'],
+            'content' => ['required_without_all:media,prediction_history_id', 'nullable', 'string', 'max:5000'],
             'media' => ['nullable', 'file', 'mimes:jpeg,jpg,png,gif,webp,mp4,mov,avi', 'max:10240'],
+            'prediction_history_id' => ['nullable', 'uuid', 'exists:prediction_histories,uuid'],
         ]);
 
         $isUserSender = $conversation->user_id === $user->id;
@@ -98,6 +100,15 @@ class ConversationController extends Controller
             }
         }
 
+        $predictionHistory = null;
+        if (! empty($validated['prediction_history_id'])) {
+            $predictionHistory = PredictionHistory::where('uuid', $validated['prediction_history_id'])
+                ->where('user_id', $user->id)
+                ->first();
+
+            abort_unless($predictionHistory, 403, 'Hasil scan tidak ditemukan atau bukan milik Anda.');
+        }
+
         $hasMedia = $request->hasFile('media');
         $mediaFile = $hasMedia ? $request->file('media') : null;
         $type = 'text';
@@ -107,9 +118,18 @@ class ConversationController extends Controller
             $type = str_starts_with($mime, 'video/') ? 'video' : 'image';
         }
 
+        if ($predictionHistory) {
+            $type = 'scan_result';
+        }
+
         $this->assertCleanContent($validated['content'] ?? null);
 
-        $message = DB::transaction(function () use ($conversation, $user, $validated, $isUserSender, $recipientIsAiBot, $hasMedia, $mediaFile, $type) {
+        $finalContent = $validated['content'] ?? null;
+        if ($predictionHistory && $finalContent === null) {
+            $finalContent = "Hasil scan: {$predictionHistory->predicted_class} (confidence ".number_format($predictionHistory->confidence * 100, 1)."%, severity {$predictionHistory->severity_level->value}) — ".$predictionHistory->created_at->format('d M Y');
+        }
+
+        $message = DB::transaction(function () use ($conversation, $user, $isUserSender, $recipientIsAiBot, $hasMedia, $mediaFile, $type, $predictionHistory, $finalContent) {
             $locked = Conversation::whereKey($conversation->getKey())->lockForUpdate()->first();
 
             if ($isUserSender && ! $recipientIsAiBot && $user->hasReachedFreeChatQuota()) {
@@ -118,8 +138,9 @@ class ConversationController extends Controller
 
             $message = $locked->messages()->create([
                 'sender_id' => $user->id,
-                'content' => $validated['content'] ?? null,
+                'content' => $finalContent,
                 'type' => $type,
+                'prediction_history_id' => $predictionHistory?->id,
             ]);
 
             if ($hasMedia) {
@@ -134,25 +155,25 @@ class ConversationController extends Controller
             return $message;
         });
 
-        MessageSent::dispatch($message->load(['sender.roles', 'conversation']));
+        MessageSent::dispatch($message->load(['sender.roles', 'conversation', 'predictionHistory']));
 
         if ($recipientIsAiBot) {
             GenerateAiReply::dispatch($conversation, $message);
             $this->incrementAiChatUsage($user);
 
-            return (new MessageResource($message->load('sender.roles')))->response()->setStatusCode(201);
+            return (new MessageResource($message->load('sender.roles', 'predictionHistory')))->response()->setStatusCode(201);
         }
 
         $recipient = $isUserSender ? $conversation->doctor : $conversation->user;
         Notification::send($recipient, new AppNotification(
             'Pesan baru dari '.$user->full_name,
-            mb_strimwidth(strip_tags((string) ($validated['content'] ?? 'Foto')), 0, 120, '…'),
+            mb_strimwidth(strip_tags((string) ($finalContent ?? 'Foto')), 0, 120, '…'),
             ['conversation_id' => $conversation->uuid],
         ));
 
-        $this->notifyOfflineRecipient($recipient, $user, $conversation, $validated['content'] ?? null);
+        $this->notifyOfflineRecipient($recipient, $user, $conversation, $finalContent);
 
-        return (new MessageResource($message->load('sender.roles')))->response()->setStatusCode(201);
+        return (new MessageResource($message->load('sender.roles', 'predictionHistory')))->response()->setStatusCode(201);
     }
 
     private function assertWithinAiChatQuota(User $user): void

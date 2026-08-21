@@ -36,4 +36,9 @@ class Message extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'sender_id');
     }
+
+    public function predictionHistory()
+    {
+        return $this->belongsTo(PredictionHistory::class);
+    }
 }

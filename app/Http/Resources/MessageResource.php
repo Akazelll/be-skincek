@@ -12,7 +12,7 @@ class MessageResource extends JsonResource
     {
         $media = $this->getFirstMedia('chat-media');
 
-        return [
+        $data = [
             'uuid' => $this->uuid,
             'sender' => [
                 'uuid' => $this->sender->uuid,
@@ -24,5 +24,19 @@ class MessageResource extends JsonResource
             'media_url' => MediaHelper::url($media),
             'created_at' => $this->created_at?->toISOString(),
         ];
+
+        if ($this->type === 'scan_result' && $this->relationLoaded('predictionHistory') && $this->predictionHistory) {
+            $ph = $this->predictionHistory;
+            $data['prediction_history'] = [
+                'uuid' => $ph->uuid,
+                'predicted_class' => $ph->predicted_class,
+                'confidence' => (float) $ph->confidence,
+                'severity_level' => $ph->severity_level->value,
+                'scan_mode' => $ph->scan_mode->value,
+                'created_at' => $ph->created_at?->toISOString(),
+            ];
+        }
+
+        return $data;
     }
 }

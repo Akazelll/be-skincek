@@ -46,6 +46,19 @@ class UserSeeder extends Seeder
         ]);
         $user->assignRole('user');
 
+        $dev = User::create([
+            'uuid' => Str::uuid(),
+            'full_name' => 'Adam Raga',
+            'email' => 'adamxraga@gmail.com',
+            'password' => Hash::make('developer123'),
+            'email_verified_at' => now(),
+            'date_of_birth' => '2006-01-12',
+            'gender' => 'laki_laki',
+            'privacy_consent_at' => now(),
+            'is_active' => true,
+        ]);
+        $dev->assignRole('user');
+
         $aura = User::firstOrCreate(
             ['email' => config('ai.bot_email', 'aura@skincek.com')],
             [
