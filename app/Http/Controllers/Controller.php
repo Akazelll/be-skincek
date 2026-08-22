@@ -11,7 +11,7 @@ abstract class Controller
 
     protected const ALLOWED_PER_PAGE = [5, 10, 20, 50];
 
-    protected const DEFAULT_PER_PAGE = 10;
+    protected const DEFAULT_PER_PAGE = 5;
 
     protected function perPage(Request $request): int
     {

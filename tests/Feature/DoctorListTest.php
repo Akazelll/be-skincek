@@ -116,10 +116,10 @@ class DoctorListTest extends TestCase
 
         $this->getJson('/api/v1/doctors?per_page=7')
             ->assertOk()
-            ->assertJsonPath('meta.per_page', 10);
+            ->assertJsonPath('meta.per_page', 5);
 
         $this->getJson('/api/v1/doctors?per_page=999')
             ->assertOk()
-            ->assertJsonPath('meta.per_page', 10);
+            ->assertJsonPath('meta.per_page', 5);
     }
 }
