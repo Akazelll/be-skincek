@@ -13,7 +13,7 @@ class PurgeScanPhotos extends Command
 
     public function handle(): int
     {
-        $days = (int) ($this->option('days') ?? env('SCAN_PHOTO_RETENTION_DAYS', 90));
+        $days = (int) ($this->option('days') ?? config('services.ml.scan_photo_retention_days', 90));
         $cutoff = now()->subDays($days);
         $count = 0;
 

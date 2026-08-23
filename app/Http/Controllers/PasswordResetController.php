@@ -62,7 +62,7 @@ class PasswordResetController extends Controller
             return $this->errorResponse('Kode OTP tidak valid atau kedaluwarsa', 422);
         }
 
-        $user->update(['password' => $validated['password']]);
+        $user->update(['password' => Hash::make($validated['password'])]);
         $user->tokens()->delete();
         Cache::forget($key);
 

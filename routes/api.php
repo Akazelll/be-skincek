@@ -135,12 +135,6 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/admin/verifications/{doctorVerification}', [DoctorVerificationController::class, 'showAdmin']);
             Route::patch('/doctor-verifications/{doctorVerification}/review', [DoctorVerificationController::class, 'review']);
 
-            Route::post('/skin-concerns', [SkinConcernController::class, 'store']);
-            Route::patch('/skin-concerns/{skinConcern}', [SkinConcernController::class, 'update']);
-            Route::delete('/skin-concerns/{skinConcern}', [SkinConcernController::class, 'destroy']);
-            Route::post('/skin-types', [SkinTypeController::class, 'store']);
-            Route::patch('/skin-types/{skinType}', [SkinTypeController::class, 'update']);
-            Route::delete('/skin-types/{skinType}', [SkinTypeController::class, 'destroy']);
             Route::get('/admin/skincare-products', [SkincareProductController::class, 'adminIndex']);
         });
 
@@ -155,6 +149,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/skin-recommendations', [SkinRecommendationController::class, 'store']);
             Route::patch('/skin-recommendations/{skinRecommendation}', [SkinRecommendationController::class, 'update']);
             Route::delete('/skin-recommendations/{skinRecommendation}', [SkinRecommendationController::class, 'destroy']);
+
+            Route::patch('/skin-concerns/{skinConcern}', [SkinConcernController::class, 'update']);
+
+            Route::post('/skin-types', [SkinTypeController::class, 'store']);
+            Route::patch('/skin-types/{skinType}', [SkinTypeController::class, 'update']);
+            Route::delete('/skin-types/{skinType}', [SkinTypeController::class, 'destroy']);
         });
     });
 });

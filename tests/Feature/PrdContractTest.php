@@ -104,34 +104,41 @@ class PrdContractTest extends TestCase
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
+        $doctor = User::factory()->create();
+        $doctor->assignRole('doctor');
         $user = User::factory()->create();
         $user->assignRole('user');
 
+        // Skin concerns: read-only for everyone, doctor can update description only
+        Sanctum::actingAs($doctor);
+        $this->postJson('/api/v1/skin-concerns', ['name' => 'Jerawat', 'ml_label' => 'acne'])->assertStatus(405);
+        $concern = SkinConcern::first();
+        $this->patchJson("/api/v1/skin-concerns/{$concern->uuid}", ['description' => 'Deskripsi baru dari dokter'])->assertOk();
+        $this->patchJson("/api/v1/skin-concerns/{$concern->uuid}", ['name' => 'Edit nama'])->assertUnprocessable();
+        $this->deleteJson("/api/v1/skin-concerns/{$concern->uuid}")->assertStatus(405);
+
+        // Skin types: doctor can CRUD
+        Sanctum::actingAs($doctor);
+        $type = $this->postJson('/api/v1/skin-types', ['name' => 'Kulit Berminyak'])->assertCreated()->json('data');
+        $this->patchJson("/api/v1/skin-types/{$type['uuid']}", ['name' => 'Kulit Berminyak Updated'])->assertOk();
+        $this->deleteJson("/api/v1/skin-types/{$type['uuid']}")->assertOk();
+
+        // User cannot manage skin types
         Sanctum::actingAs($user);
-        $this->postJson('/api/v1/skin-concerns', ['name' => 'Jerawat', 'ml_label' => 'acne'])->assertForbidden();
-        $this->postJson('/api/v1/skin-types', ['name' => 'Kulit Berminyak'])->assertForbidden();
-
-        Sanctum::actingAs($admin);
-        $concern = $this->postJson('/api/v1/skin-concerns', ['name' => 'Jerawat', 'ml_label' => 'acne'])
-            ->assertCreated()
-            ->json('data');
-        $this->postJson('/api/v1/skin-types', ['name' => 'Kulit Berminyak'])->assertCreated();
-
-        $this->patchJson("/api/v1/skin-concerns/{$concern['uuid']}", ['is_active' => false])->assertOk();
-        $this->deleteJson("/api/v1/skin-concerns/{$concern['uuid']}")->assertOk();
+        $this->postJson('/api/v1/skin-types', ['name' => 'Test'])->assertForbidden();
     }
 
     public function test_public_catalog_only_lists_active_concerns_and_types(): void
     {
         SkinConcern::create(['name' => 'Eksim', 'ml_label' => 'eczema', 'is_active' => false]);
-        SkinType::create(['name' => 'Kering', 'is_active' => false]);
+        SkinType::create(['name' => 'Kering Test', 'is_active' => false]);
 
         $this->getJson('/api/v1/skin-concerns')
             ->assertOk()
             ->assertJsonMissing(['name' => 'Eksim']);
         $this->getJson('/api/v1/skin-types')
             ->assertOk()
-            ->assertJsonMissing(['name' => 'Kering']);
+            ->assertJsonMissing(['name' => 'Kering Test']);
     }
 
     public function test_account_deletion_right_to_erasure(): void

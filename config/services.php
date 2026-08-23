@@ -9,7 +9,9 @@ return [
         'retries' => (int) env('ML_RETRIES', 2),
         'free_scan_limit' => (int) env('FREE_SCAN_LIMIT', 3),
         'confidence_threshold' => (float) env('ML_CONFIDENCE_THRESHOLD', 0.50),
+        'concern_description_threshold' => (float) env('ML_CONCERN_DESCRIPTION_THRESHOLD', 0.10),
         'disclaimer' => 'Hasil scan hanya sebagai referensi awal dan bukan diagnosis medis. Konsultasikan dengan dokter kulit untuk penanganan yang tepat.',
+        'scan_photo_retention_days' => (int) env('SCAN_PHOTO_RETENTION_DAYS', 90),
     ],
 
     'google' => [

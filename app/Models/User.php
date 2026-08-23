@@ -36,7 +36,6 @@ class User extends Authenticatable implements HasMedia
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
             'privacy_consent_at' => 'datetime',
             'is_active' => 'boolean',
             'ai_bot' => 'boolean',

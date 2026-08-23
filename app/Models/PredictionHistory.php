@@ -42,4 +42,9 @@ class PredictionHistory extends Model implements HasMedia
     {
         return $this->hasMany(PredictionFeedback::class);
     }
+
+    public function skinConcern()
+    {
+        return $this->belongsTo(SkinConcern::class, 'predicted_class', 'ml_label');
+    }
 }

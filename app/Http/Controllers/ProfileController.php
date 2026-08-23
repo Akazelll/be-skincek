@@ -131,7 +131,7 @@ class ProfileController extends Controller
 
     public function export(Request $request)
     {
-        $user = $request->user()->load(['subscriptions', 'predictionHistories', 'doctorVerification']);
+        $user = $request->user()->load(['subscriptions', 'predictionHistories', 'doctorVerification', 'aiChatConsents']);
 
         $payload = [
             'exported_at' => now()->toISOString(),
@@ -173,6 +173,12 @@ class ProfileController extends Controller
             ] : null,
             'messages_count' => Message::where('sender_id', $user->id)->count(),
             'device_tokens_count' => $user->deviceTokens()->count(),
+            'ai_chat_consents' => $user->aiChatConsents->map(fn ($c) => [
+                'consent_version' => $c->consent_version,
+                'accepted_at' => $c->accepted_at?->toISOString(),
+                'ip_address' => $c->ip_address,
+                'created_at' => $c->created_at?->toISOString(),
+            ]),
         ];
 
         $disk = Storage::disk('local');
