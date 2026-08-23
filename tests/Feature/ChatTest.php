@@ -331,19 +331,19 @@ class ChatTest extends TestCase
         $channelName = 'private-conversation.'.$conversation->uuid;
 
         Sanctum::actingAs($user);
-        $this->postJson('/broadcasting/auth', [
+        $this->postJson('/api/v1/broadcasting/auth', [
             'channel_name' => $channelName,
             'socket_id' => '1234.5678',
         ])->assertOk();
 
         Sanctum::actingAs($doctor);
-        $this->postJson('/broadcasting/auth', [
+        $this->postJson('/api/v1/broadcasting/auth', [
             'channel_name' => $channelName,
             'socket_id' => '1234.5678',
         ])->assertOk();
 
         Sanctum::actingAs($stranger);
-        $this->postJson('/broadcasting/auth', [
+        $this->postJson('/api/v1/broadcasting/auth', [
             'channel_name' => $channelName,
             'socket_id' => '1234.5678',
         ])->assertForbidden();
