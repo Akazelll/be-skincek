@@ -1,17 +1,34 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pesan Baru</title>
-</head>
-<body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6;">
-    <h1 style="font-size: 22px;">Pesan Baru 💬</h1>
-    <p>Kamu menerima pesan baru dari <strong>{{ $senderName }}</strong> di SkinCek:</p>
-    <blockquote style="border-left: 4px solid #0ea5e9; margin: 12px 0; padding: 8px 16px; background: #f0f9ff;">
-        {{ $snippet }}
-    </blockquote>
-    <p>Buka aplikasi SkinCek untuk membalas pesan ini.</p>
-    <p>Salam sehat,<br>Tim SkinCek</p>
-</body>
-</html>
+@extends('mail.layouts.base')
+
+@section('title', 'Pesan Baru SkinCek')
+
+@section('preheader', $senderName . ' mengirim pesan baru untukmu di SkinCek.')
+
+@section('heading', 'Kamu Punya Pesan Baru 💬')
+
+@section('subheading', 'Seseorang menunggu balasanmu.')
+
+@section('content')
+    <p style="margin: 0 0 16px 0; font-size: 15px;">
+        Kamu menerima pesan baru dari <strong style="color: #047857;">{{ $senderName }}</strong>:
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 0 10px 10px 0; padding: 14px 18px; font-size: 15px; color: #374151; font-style: italic;">
+                &ldquo;{{ $snippet }}&rdquo;
+            </td>
+        </tr>
+    </table>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 24px;">
+        <tr>
+            <td align="center">
+                <a href="https://www.skincek.web.id"
+                   style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 36px; border-radius: 10px;">
+                    Buka & Balas Pesan
+                </a>
+            </td>
+        </tr>
+    </table>
+@endsection
