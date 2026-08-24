@@ -151,10 +151,10 @@ class AuthController extends Controller
         }
 
         $user = DB::transaction(function () use ($payload, $validated) {
-            $user = User::where('google_id', $payload['sub'])->first();
+            $user = User::where('google_id', $payload['sub'])->withTrashed()->first();
 
             if (! $user) {
-                $user = User::where('email', $payload['email'])->lockForUpdate()->first();
+                $user = User::where('email', $payload['email'])->withTrashed()->lockForUpdate()->first();
 
                 if ($user?->google_id && $user->google_id !== $payload['sub']) {
                     return null;
@@ -175,8 +175,15 @@ class AuthController extends Controller
                     ]);
                     $user->assignRole('user');
                 } else {
+                    if ($user->trashed()) {
+                        $user->restore();
+                        $user->is_active = true;
+                    }
                     $user->update(['google_id' => $payload['sub'], 'email_verified_at' => $user->email_verified_at ?? now()]);
                 }
+            } elseif ($user->trashed()) {
+                $user->restore();
+                $user->is_active = true;
             }
 
             if (! empty($payload['picture'])) {

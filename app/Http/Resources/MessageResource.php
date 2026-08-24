@@ -14,11 +14,11 @@ class MessageResource extends JsonResource
 
         $data = [
             'uuid' => $this->uuid,
-            'sender' => [
+            'sender' => $this->sender ? [
                 'uuid' => $this->sender->uuid,
                 'full_name' => $this->sender->full_name,
                 'role' => $this->sender->roles->first()?->name,
-            ],
+            ] : null,
             'content' => $this->content,
             'type' => $this->type ?? 'text',
             'media_url' => MediaHelper::url($media),
