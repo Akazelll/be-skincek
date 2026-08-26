@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\ProductGender;
 use App\Http\Resources\SkincareProductResource;
+use App\Models\SkinConcern;
+use App\Models\SkinType;
 use App\Models\SkincareProduct;
+use App\Support\UuidResolver;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -36,6 +39,8 @@ class SkincareProductController extends Controller
     public function store(Request $request)
     {
         abort_unless($request->user()->isVerifiedDoctor(), 403, 'Dokter harus terverifikasi terlebih dahulu');
+
+        $this->resolveRelationIdentifiers($request);
 
         $validated = $request->validate([
             'concern_id' => ['required', 'exists:skin_concerns,id'],
@@ -69,6 +74,8 @@ class SkincareProductController extends Controller
     {
         abort_unless($skincareProduct->doctor_id === $request->user()->id || $request->user()->hasRole('admin'), 403);
 
+        $this->resolveRelationIdentifiers($request);
+
         $validated = $request->validate([
             'concern_id' => ['sometimes', 'exists:skin_concerns,id'],
             'skin_type_id' => ['nullable', 'exists:skin_types,id'],
@@ -93,5 +100,24 @@ class SkincareProductController extends Controller
         $skincareProduct->delete();
 
         return $this->successResponse(null, ['message' => 'Produk berhasil dihapus']);
+    }
+
+    /**
+     * Terima uuid (atau id internal) pada concern_id / skin_type_id lalu
+     * ganti di request dengan ID internal sebelum validasi berjalan.
+     */
+    private function resolveRelationIdentifiers(Request $request): void
+    {
+        if ($request->filled('concern_id')) {
+            $request->merge([
+                'concern_id' => UuidResolver::resolve(SkinConcern::class, $request->input('concern_id')),
+            ]);
+        }
+
+        if ($request->filled('skin_type_id')) {
+            $request->merge([
+                'skin_type_id' => UuidResolver::resolve(SkinType::class, $request->input('skin_type_id')),
+            ]);
+        }
     }
 }

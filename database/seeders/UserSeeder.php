@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\SubscriptionStatus;
 use App\Enums\VerificationStatus;
 use App\Models\DoctorVerification;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -35,6 +37,13 @@ class UserSeeder extends Seeder
             'is_active' => true,
         ]);
         $doctor->assignRole('doctor');
+        DoctorVerification::firstOrCreate(
+            ['doctor_id' => $doctor->id],
+            [
+                'specialization' => 'Dermatologi Klinik',
+                'verification_status' => VerificationStatus::APPROVED,
+            ]
+        );
 
         $user = User::create([
             'uuid' => Str::uuid(),
@@ -59,6 +68,18 @@ class UserSeeder extends Seeder
                 'is_active' => true,
             ]);
             $dev->assignRole('user');
+
+            Subscription::firstOrCreate(
+                ['user_id' => $dev->id, 'plan_code' => 'pro_lifetime'],
+                [
+                    'uuid' => Str::uuid(),
+                    'period' => 'lifetime',
+                    'status' => SubscriptionStatus::ACTIVE,
+                    'amount' => 0,
+                    'currency' => 'IDR',
+                    'starts_at' => now(),
+                ]
+            );
         }
 
         $aura = User::firstOrCreate(

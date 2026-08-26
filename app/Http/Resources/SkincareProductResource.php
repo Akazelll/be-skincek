@@ -21,6 +21,7 @@ class SkincareProductResource extends JsonResource
             'concern' => SkinConcernResource::make($this->whenLoaded('concern')),
             'skin_type' => SkinTypeResource::make($this->whenLoaded('skinType')),
             'doctor' => UserResource::make($this->whenLoaded('doctor')),
+            'created_at' => $this->created_at?->toISOString(),
         ];
     }
 }

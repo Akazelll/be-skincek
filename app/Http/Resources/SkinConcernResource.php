@@ -16,6 +16,8 @@ class SkinConcernResource extends JsonResource
             'description' => $this->description,
             'default_severity_score' => $this->default_severity_score,
             'is_active' => $this->is_active,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

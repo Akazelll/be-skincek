@@ -18,7 +18,10 @@ class AppNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        // 'broadcast' mengirim event BroadcastNotificationCreated ke channel
+        // privat user (lihat User::receivesBroadcastNotificationsOn) agar
+        // notification bell frontend menerima notifikasi realtime via Reverb.
+        return ['database', 'broadcast'];
     }
 
     public function toDatabase(object $notifiable): array
@@ -28,5 +31,10 @@ class AppNotification extends Notification implements ShouldQueue
             'body' => $this->body,
             ...$this->data,
         ];
+    }
+
+    public function toBroadcast(object $notifiable): array
+    {
+        return $this->toDatabase($notifiable);
     }
 }

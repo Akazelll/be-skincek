@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             SkinConcernSeeder::class,
             SkinTypeSeeder::class,
             UserSeeder::class,
+            SkinRecommendationSeeder::class,
         ]);
     }
 }

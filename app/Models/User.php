@@ -7,6 +7,7 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\VerificationStatus;
 use App\Support\MediaHelper;
 use App\Traits\HasPublicUuid;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -63,6 +64,13 @@ class User extends Authenticatable implements HasMedia
     public function aiChatConsents()
     {
         return $this->hasMany(AiChatConsent::class);
+    }
+
+    // Channel broadcast untuk notifikasi realtime (Laravel Reverb).
+    // Frontend berlangganan private channel `user.{uuid}`.
+    public function receivesBroadcastNotificationsOn(): PrivateChannel
+    {
+        return new PrivateChannel('user.'.$this->uuid);
     }
 
     public function hasConsentedToAiChat(): bool

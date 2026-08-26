@@ -127,6 +127,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         // Admin routes
         Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
             Route::get('/admin/users', [AdminController::class, 'listUsers']);
             Route::get('/admin/users/{user}', [AdminController::class, 'showUser']);
             Route::patch('/admin/users/{user}/role', [AdminController::class, 'assignRole']);
@@ -140,6 +141,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         // Product & recommendation management (doctor)
         Route::middleware('role:doctor')->group(function () {
+            Route::get('/doctor/dashboard', [DoctorController::class, 'dashboard']);
             Route::get('/doctor/products', [SkincareProductController::class, 'doctorIndex']);
             Route::post('/skincare-products', [SkincareProductController::class, 'store']);
             Route::patch('/skincare-products/{skincareProduct}', [SkincareProductController::class, 'update']);

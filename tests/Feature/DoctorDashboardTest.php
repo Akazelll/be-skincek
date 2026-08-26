@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Conversation;
+use App\Models\DoctorRating;
 use App\Models\SkincareProduct;
 use App\Models\SkinConcern;
 use App\Models\SkinRecommendation;
@@ -128,5 +130,98 @@ class DoctorDashboardTest extends TestCase
 
         $this->getJson('/api/v1/doctor/products')->assertForbidden();
         $this->getJson('/api/v1/doctor/recommendations')->assertForbidden();
+        $this->getJson('/api/v1/doctor/dashboard')->assertForbidden();
+    }
+
+    public function test_doctor_dashboard_returns_stats_and_recent_conversations(): void
+    {
+        $doctor = $this->approvedDoctor();
+        $patient = User::factory()->create(['full_name' => 'Budi Pasien']);
+        $patient->assignRole('user');
+
+        $concern = SkinConcern::create(['name' => 'Acne', 'ml_label' => 'acne']);
+        SkincareProduct::create([
+            'doctor_id' => $doctor->id,
+            'concern_id' => $concern->id,
+            'name' => 'Serum',
+            'category' => 'Serum',
+            'usage_instruction' => 'Night',
+        ]);
+        SkinRecommendation::create([
+            'doctor_id' => $doctor->id,
+            'concern_id' => $concern->id,
+            'title' => 'Rutinitas',
+            'recommendation_text' => 'Text',
+            'priority_level' => 'high',
+        ]);
+        DoctorRating::create(['user_id' => $patient->id, 'doctor_id' => $doctor->id, 'rating' => 5]);
+
+        $conversation = Conversation::create([
+            'user_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+        ]);
+        $conversation->messages()->create([
+            'sender_id' => $patient->id,
+            'content' => 'Dok, tolong lihat hasil scan saya dong',
+        ]);
+
+        Sanctum::actingAs($doctor);
+
+        $response = $this->getJson('/api/v1/doctor/dashboard')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'verification_status',
+                    'stats' => [
+                        'total_patients',
+                        'conversations_awaiting_reply',
+                        'my_products',
+                        'my_recommendations',
+                        'average_rating',
+                        'total_ratings',
+                    ],
+                    'recent_conversations',
+                ],
+            ]);
+
+        $this->assertEquals('approved', $response->json('data.verification_status'));
+        $this->assertEquals(1, $response->json('data.stats.total_patients'));
+        $this->assertEquals(1, $response->json('data.stats.conversations_awaiting_reply'));
+        $this->assertEquals(1, $response->json('data.stats.my_products'));
+        $this->assertEquals(1, $response->json('data.stats.my_recommendations'));
+        $this->assertEquals(5.0, $response->json('data.stats.average_rating'));
+        $this->assertEquals(1, $response->json('data.stats.total_ratings'));
+
+        $recent = $response->json('data.recent_conversations.0');
+        $this->assertEquals($conversation->uuid, $recent['uuid']);
+        $this->assertEquals('Budi Pasien', $recent['user']['full_name']);
+        $this->assertEquals('Dok, tolong lihat hasil scan saya dong', $recent['last_message']['content']);
+        $this->assertEquals('user', $recent['last_message']['sender_role']);
+    }
+
+    public function test_doctor_dashboard_awaiting_reply_zero_when_doctor_replied_last(): void
+    {
+        $doctor = $this->approvedDoctor();
+        $patient = User::factory()->create();
+        $patient->assignRole('user');
+
+        $conversation = Conversation::create([
+            'user_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+        ]);
+        $conversation->messages()->create([
+            'sender_id' => $patient->id,
+            'content' => 'Halo dok',
+        ]);
+        $conversation->messages()->create([
+            'sender_id' => $doctor->id,
+            'content' => 'Halo, ada yang bisa dibantu?',
+        ]);
+
+        Sanctum::actingAs($doctor);
+
+        $this->getJson('/api/v1/doctor/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.stats.conversations_awaiting_reply', 0);
     }
 }

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Resources\SkinRecommendationResource;
 use App\Models\SkinConcern;
 use App\Models\SkinRecommendation;
+use App\Models\SkincareProduct;
+use App\Support\UuidResolver;
 use Illuminate\Http\Request;
 
 class SkinRecommendationController extends Controller
@@ -39,6 +41,8 @@ class SkinRecommendationController extends Controller
     {
         abort_unless($request->user()->isVerifiedDoctor(), 403, 'Dokter harus terverifikasi terlebih dahulu');
 
+        $this->resolveRelationIdentifiers($request);
+
         $validated = $request->validate([
             'concern_id' => ['required', 'exists:skin_concerns,id'],
             'product_id' => ['nullable', 'exists:skincare_products,id'],
@@ -62,6 +66,8 @@ class SkinRecommendationController extends Controller
     {
         abort_unless($skinRecommendation->doctor_id === $request->user()->id || $request->user()->hasRole('admin'), 403);
 
+        $this->resolveRelationIdentifiers($request);
+
         $validated = $request->validate([
             'concern_id' => ['sometimes', 'exists:skin_concerns,id'],
             'product_id' => ['nullable', 'exists:skincare_products,id'],
@@ -83,5 +89,24 @@ class SkinRecommendationController extends Controller
         $skinRecommendation->delete();
 
         return $this->successResponse(null, ['message' => 'Rekomendasi berhasil dihapus']);
+    }
+
+    /**
+     * Terima uuid (atau id internal) pada concern_id / product_id lalu
+     * ganti di request dengan ID internal sebelum validasi berjalan.
+     */
+    private function resolveRelationIdentifiers(Request $request): void
+    {
+        if ($request->filled('concern_id')) {
+            $request->merge([
+                'concern_id' => UuidResolver::resolve(SkinConcern::class, $request->input('concern_id')),
+            ]);
+        }
+
+        if ($request->filled('product_id')) {
+            $request->merge([
+                'product_id' => UuidResolver::resolve(SkincareProduct::class, $request->input('product_id')),
+            ]);
+        }
     }
 }
