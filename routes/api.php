@@ -77,6 +77,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::patch('/profile', [ProfileController::class, 'update']);
         Route::delete('/profile', [ProfileController::class, 'destroy']);
+        Route::post('/profile/change-password', [ProfileController::class, 'changePassword']);
         Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar']);
         Route::post('/profile/export', [ProfileController::class, 'export']);
         Route::get('/profile/exports/download', [ProfileController::class, 'downloadExport'])->name('profile.export.download');
@@ -131,6 +132,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/admin/users', [AdminController::class, 'listUsers']);
             Route::get('/admin/users/{user}', [AdminController::class, 'showUser']);
             Route::patch('/admin/users/{user}/role', [AdminController::class, 'assignRole']);
+            Route::patch('/admin/users/{user}/toggle-active', [AdminController::class, 'toggleActive']);
             Route::get('/admin/activity-log', [AdminController::class, 'activityLog']);
             Route::get('/admin/verifications', [DoctorVerificationController::class, 'index']);
             Route::get('/admin/verifications/{doctorVerification}', [DoctorVerificationController::class, 'showAdmin']);

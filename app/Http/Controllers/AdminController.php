@@ -119,6 +119,22 @@ class AdminController extends Controller
         return new UserResource($user->load(['roles', 'doctorVerification']));
     }
 
+    public function toggleActive(User $user)
+    {
+        $user->update(['is_active' => ! $user->is_active]);
+
+        activity()
+            ->useLog('user_management')
+            ->performedOn($user)
+            ->causedBy(request()->user())
+            ->withProperties(['is_active' => $user->is_active])
+            ->log($user->is_active ? 'User activated' : 'User suspended');
+
+        return $this->successResponse(new UserResource($user), [
+            'message' => $user->is_active ? 'User berhasil diaktifkan' : 'User berhasil disuspend',
+        ]);
+    }
+
     public function activityLog(Request $request)
     {
         $activities = Activity::query()

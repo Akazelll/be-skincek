@@ -113,6 +113,28 @@ class ProfileController extends Controller
         ], ['message' => 'Foto profil berhasil dihapus']);
     }
 
+    public function changePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Password lama tidak sesuai',
+            ], 422);
+        }
+
+        $user->password = Hash::make($validated['password']);
+        $user->save();
+
+        return $this->successResponse(null, ['message' => 'Password berhasil diubah']);
+    }
+
     public function destroy(Request $request)
     {
         $user = $request->user();
