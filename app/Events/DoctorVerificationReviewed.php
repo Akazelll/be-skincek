@@ -2,14 +2,21 @@
 
 namespace App\Events;
 
+use App\Enums\NotificationCategory;
 use App\Enums\NotificationType;
 use App\Models\DoctorVerification;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DoctorVerificationReviewed implements ShouldBroadcast
+/**
+ * Event broadcast saat verifikasi dokter di-review.
+ *
+ * Menggunakan custom event name 'doctor.verification.reviewed'.
+ * Format payload konsisten dengan NotificationResource.
+ */
+class DoctorVerificationReviewed implements ShouldBroadcastNow
 {
     use Dispatchable;
     use SerializesModels;
@@ -25,14 +32,14 @@ class DoctorVerificationReviewed implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return NotificationType::DOCTOR_VERIFICATION_REVIEWED->value;
+        return 'doctor.verification.reviewed';
     }
 
     public function broadcastWith(): array
     {
         return [
-            'type' => NotificationType::DOCTOR_VERIFICATION_REVIEWED->value,
-            'category' => NotificationType::DOCTOR_VERIFICATION_REVIEWED->category()->value,
+            'type' => NotificationType::SUCCESS->value,
+            'category' => NotificationCategory::VERIFICATION_APPROVED->value,
             'verification_status' => $this->doctorVerification->verification_status->value,
             'rejection_reason' => $this->doctorVerification->rejection_reason,
             'revision_note' => $this->doctorVerification->revision_note,

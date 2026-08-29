@@ -299,7 +299,7 @@ class ChatTest extends TestCase
 
             return $event instanceof MessageSent
                 && $event->broadcastOn()[0]->name === 'private-conversation.'.$conversation->uuid
-                && $event->broadcastAs() === 'chat_message_received'
+                && $event->broadcastAs() === 'message.sent'
                 && $event->broadcastWith()['message']['content'] === 'hai dokter';
         });
     }

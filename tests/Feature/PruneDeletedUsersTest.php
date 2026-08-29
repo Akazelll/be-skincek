@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\Notification;
 use App\Models\PredictionHistory;
 use App\Models\User;
-use App\Notifications\AppNotification;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -55,7 +55,13 @@ class PruneDeletedUsersTest extends TestCase
             'amount' => 15000,
             'currency' => 'IDR',
         ]);
-        $user->notify(new AppNotification('Halo', 'Isi'));
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => 'info',
+            'category' => 'welcome',
+            'title' => 'Halo',
+            'message' => 'Isi',
+        ]);
         $user->createToken('auth_token');
         $user->deviceTokens()->create(['fcm_token' => 'fcm-token', 'platform' => 'android']);
 
@@ -70,7 +76,7 @@ class PruneDeletedUsersTest extends TestCase
         $this->assertDatabaseMissing('conversations', ['id' => $conversation->id]);
         $this->assertDatabaseMissing('messages', ['id' => $message->id]);
         $this->assertDatabaseMissing('subscriptions', ['user_id' => $user->id]);
-        $this->assertDatabaseMissing('notifications', ['notifiable_id' => $user->id]);
+        $this->assertDatabaseMissing('notifications', ['user_id' => $user->id]);
         $this->assertDatabaseMissing('personal_access_tokens', ['tokenable_id' => $user->id]);
         $this->assertDatabaseMissing('device_tokens', ['user_id' => $user->id]);
         $this->assertDatabaseMissing('media', ['model_id' => $message->id]);

@@ -10,13 +10,18 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('type');
-            $table->morphs('notifiable');
-            $table->text('data');
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('type', 20);        // success|warning|error|info
+            $table->string('category', 50);     // welcome|scan_complete|chat_message|etc
+            $table->string('title');
+            $table->text('message')->nullable();
+            $table->string('action_url', 500)->nullable();
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
 
-            $table->index(['notifiable_type', 'notifiable_id', 'read_at']);
+            $table->index(['user_id', 'read_at'], 'idx_user_read');
+            $table->index(['user_id', 'created_at'], 'idx_user_created');
+            $table->index('created_at', 'idx_cleanup');
         });
     }
 

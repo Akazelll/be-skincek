@@ -12,3 +12,4 @@ Schedule::command('backup:database')->dailyAt('02:00')->withoutOverlapping();
 Schedule::command('users:prune')->dailyAt('03:00')->withoutOverlapping();
 Schedule::command('scan-photos:purge')->dailyAt('04:00')->withoutOverlapping();
 Schedule::command('subscriptions:expire')->dailyAt('05:00')->withoutOverlapping();
+Schedule::command('notifications:clean')->dailyAt('06:00')->withoutOverlapping();

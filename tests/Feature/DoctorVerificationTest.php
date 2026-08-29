@@ -230,7 +230,7 @@ class DoctorVerificationTest extends TestCase
         Event::assertDispatched(DoctorVerificationReviewed::class, function (DoctorVerificationReviewed $event) use ($doctor) {
             return $event->broadcastOn()[0] instanceof PrivateChannel
                 && $event->broadcastOn()[0]->name === 'private-user.'.$doctor->uuid
-                && $event->broadcastAs() === 'doctor_verification_reviewed'
+                && $event->broadcastAs() === 'doctor.verification.reviewed'
                 && $event->broadcastWith()['verification_status'] === 'approved';
         });
     }

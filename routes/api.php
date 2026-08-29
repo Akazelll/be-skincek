@@ -83,9 +83,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('/profile/exports/download', [ProfileController::class, 'downloadExport'])->name('profile.export.download');
 
         Route::get('/notifications', [NotificationController::class, 'index']);
-        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
-        Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+        Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 
         Route::get('/ai-chat/consent', [AiChatController::class, 'consent']);
         Route::post('/ai-chat/consent', [AiChatController::class, 'updateConsent']);

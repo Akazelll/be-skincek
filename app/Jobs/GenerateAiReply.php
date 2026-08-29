@@ -7,13 +7,12 @@ use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
-use App\Notifications\AppNotification;
+use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Notification;
 
 class GenerateAiReply implements ShouldQueue
 {
@@ -54,11 +53,11 @@ class GenerateAiReply implements ShouldQueue
 
         MessageSent::dispatch($botMessage->load(['sender.roles', 'conversation']));
 
-        Notification::send($this->conversation->user, new AppNotification(
-            'Balasan dari '.config('ai.bot_name'),
-            mb_strimwidth(strip_tags($reply->answer), 0, 120, '…'),
-            ['conversation_id' => $this->conversation->uuid],
-            notificationType: 'chat',
-        ));
+        app(NotificationService::class)->chatMessage(
+            $this->conversation->user,
+            config('ai.bot_name'),
+            $reply->answer,
+            $this->conversation->uuid,
+        );
     }
 }

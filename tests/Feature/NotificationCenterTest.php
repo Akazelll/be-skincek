@@ -2,14 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Enums\VerificationStatus;
-use App\Models\Conversation;
-use App\Models\DoctorVerification;
+use App\Enums\NotificationCategory;
+use App\Enums\NotificationType;
+use App\Models\Notification;
 use App\Models\User;
-use App\Notifications\AppNotification;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -26,7 +24,13 @@ class NotificationCenterTest extends TestCase
     public function test_user_can_list_notifications_with_unread_count(): void
     {
         $user = User::factory()->create();
-        $user->notify(new AppNotification('Pembayaran berhasil', 'Langganan aktif.'));
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => NotificationType::SUCCESS,
+            'category' => NotificationCategory::SUBSCRIPTION_ACTIVE,
+            'title' => 'Pembayaran berhasil',
+            'message' => 'Langganan aktif.',
+        ]);
 
         Sanctum::actingAs($user);
 
@@ -39,14 +43,18 @@ class NotificationCenterTest extends TestCase
     public function test_user_can_mark_notification_as_read(): void
     {
         $user = User::factory()->create();
-        $user->notify(new AppNotification('Halo', 'Isi notifikasi'));
-        $notification = $user->notifications()->first();
+        $notification = Notification::create([
+            'user_id' => $user->id,
+            'type' => NotificationType::INFO,
+            'category' => NotificationCategory::WELCOME,
+            'title' => 'Halo',
+            'message' => 'Isi notifikasi',
+        ]);
 
         Sanctum::actingAs($user);
 
         $this->postJson("/api/v1/notifications/{$notification->id}/read")
-            ->assertOk()
-            ->assertJsonPath('data.notification.read_at', $notification->fresh()->read_at?->toISOString());
+            ->assertOk();
 
         $this->assertNotNull($notification->fresh()->read_at);
     }
@@ -54,23 +62,40 @@ class NotificationCenterTest extends TestCase
     public function test_user_can_mark_all_notifications_as_read(): void
     {
         $user = User::factory()->create();
-        $user->notify(new AppNotification('Satu'));
-        $user->notify(new AppNotification('Dua'));
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => NotificationType::INFO,
+            'category' => NotificationCategory::WELCOME,
+            'title' => 'Satu',
+            'message' => 'Pesan satu',
+        ]);
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => NotificationType::INFO,
+            'category' => NotificationCategory::WELCOME,
+            'title' => 'Dua',
+            'message' => 'Pesan dua',
+        ]);
 
         Sanctum::actingAs($user);
 
         $this->postJson('/api/v1/notifications/read-all')
             ->assertOk()
-            ->assertJsonPath('meta.message', 'Semua notifikasi telah dibaca');
+            ->assertJsonPath('message', 'Semua notifikasi ditandai sebagai dibaca.');
 
-        $this->assertEquals(0, $user->unreadNotifications()->count());
+        $this->assertEquals(0, Notification::forUser($user->id)->unread()->count());
     }
 
     public function test_user_cannot_read_other_users_notification(): void
     {
         $owner = User::factory()->create();
-        $owner->notify(new AppNotification('Rahasia'));
-        $notification = $owner->notifications()->first();
+        $notification = Notification::create([
+            'user_id' => $owner->id,
+            'type' => NotificationType::INFO,
+            'category' => NotificationCategory::WELCOME,
+            'title' => 'Rahasia',
+            'message' => 'Isi rahasia',
+        ]);
 
         $stranger = User::factory()->create();
         Sanctum::actingAs($stranger);
@@ -78,30 +103,29 @@ class NotificationCenterTest extends TestCase
         $this->postJson("/api/v1/notifications/{$notification->id}/read")->assertNotFound();
     }
 
-    public function test_chat_message_creates_notification_for_recipient(): void
+    public function test_unread_count_endpoint(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
-        $user->assignRole('user');
-        $doctor = User::factory()->create();
-        $doctor->assignRole('doctor');
-        DoctorVerification::create([
-            'doctor_id' => $doctor->id,
-            'specialization' => 'Dermatology',
-            'verification_status' => VerificationStatus::APPROVED,
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => NotificationType::INFO,
+            'category' => NotificationCategory::WELCOME,
+            'title' => 'Notif 1',
+            'message' => 'Pesan 1',
         ]);
-        $conversation = Conversation::create(['user_id' => $user->id, 'doctor_id' => $doctor->id]);
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => NotificationType::INFO,
+            'category' => NotificationCategory::WELCOME,
+            'title' => 'Notif 2',
+            'message' => 'Pesan 2',
+            'read_at' => now(),
+        ]);
 
         Sanctum::actingAs($user);
 
-        $this->postJson("/api/v1/conversations/{$conversation->uuid}/messages", ['content' => 'halo dokter'])
-            ->assertCreated();
-
-        Notification::assertSentTo(
-            $doctor,
-            AppNotification::class,
-            fn (AppNotification $notification) => $notification->body === 'halo dokter'
-        );
+        $this->getJson('/api/v1/notifications/unread-count')
+            ->assertOk()
+            ->assertJsonPath('unread_count', 1);
     }
 }

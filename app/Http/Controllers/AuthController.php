@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Contracts\GoogleTokenVerifierContract;
 use App\Enums\VerificationStatus;
 use App\Models\User;
-use App\Notifications\AppNotification;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
@@ -235,20 +234,12 @@ class AuthController extends Controller
 
     private function sendWelcomeNotification(User $user): void
     {
-        Notification::send($user, new AppNotification(
-            'Selamat datang di SkinCek!',
-            "Halo {$user->full_name}, senang melihatmu kembali. Yuk, cek kondisi kulitmu hari ini!",
-            notificationType: 'welcome',
-        ));
+        app(NotificationService::class)->welcome($user);
     }
 
     private function sendLogoutNotification(User $user): void
     {
-        Notification::send($user, new AppNotification(
-            'Kamu telah berhasil logout',
-            'Sesi kamu telah diakhiri dengan aman. Sampai jumpa lagi!',
-            notificationType: 'logout',
-        ));
+        app(NotificationService::class)->logout($user);
     }
 
     private function createSessionToken(User $user, Request $request): string

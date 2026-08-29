@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\DoctorRating;
 use App\Models\Message;
+use App\Models\Notification;
 use App\Models\PredictionFeedback;
 use App\Models\PredictionHistory;
 use App\Models\Subscription;
@@ -35,7 +36,7 @@ class PruneDeletedUsers extends Command
                 DoctorRating::where('user_id', $user->id)->orWhere('doctor_id', $user->id)->delete();
                 PredictionFeedback::where('user_id', $user->id)->delete();
 
-                $user->notifications()->delete();
+                Notification::where('user_id', $user->id)->delete();
                 $user->tokens()->delete();
                 $user->deviceTokens()->delete();
                 $user->forceDelete();

@@ -2,74 +2,99 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\NotificationResource;
+use App\Models\Notification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\DatabaseNotification;
 
 class NotificationController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * GET /api/v1/notifications
+     *
+     * Daftar notifikasi user (paginated).
+     * Query params: ?unread_only=true&limit=15
+     */
+    public function index(Request $request): JsonResponse
     {
-        $notifications = $request->user()
-            ->notifications()
-            ->latest()
-            ->paginate($this->perPage($request));
+        $query = Notification::forUser($request->user()->id)
+            ->orderByDesc('created_at');
+
+        if ($request->boolean('unread_only')) {
+            $query->unread();
+        }
+
+        $limit = min((int) $request->input('limit', 15), 50);
+        $notifications = $query->paginate($limit);
 
         return response()->json([
-            'data' => collect($notifications->items())->map(fn ($n) => $this->transform($n)),
+            'data' => NotificationResource::collection($notifications->items())->resolve(),
             'meta' => [
                 'current_page' => $notifications->currentPage(),
                 'last_page' => $notifications->lastPage(),
                 'per_page' => $notifications->perPage(),
                 'total' => $notifications->total(),
-                'unread_count' => $request->user()->unreadNotifications()->count(),
+                'unread_count' => Notification::forUser($request->user()->id)->unread()->count(),
             ],
         ]);
     }
 
-    public function markRead(Request $request, DatabaseNotification $notification)
+    /**
+     * GET /api/v1/notifications/unread-count
+     *
+     * Jumlah notifikasi yang belum dibaca.
+     * Digunakan FE untuk menampilkan badge angka di ikon lonceng.
+     */
+    public function unreadCount(Request $request): JsonResponse
     {
-        $this->assertOwner($request->user(), $notification);
+        $count = Notification::forUser($request->user()->id)
+            ->unread()
+            ->count();
+
+        return response()->json([
+            'unread_count' => $count,
+        ]);
+    }
+
+    /**
+     * PATCH /api/v1/notifications/{id}/read
+     */
+    public function markRead(Request $request, string $id): JsonResponse
+    {
+        $notification = Notification::forUser($request->user()->id)->findOrFail($id);
         $notification->markAsRead();
 
-        return $this->successResponse(['notification' => $this->transform($notification->fresh())]);
+        return response()->json([
+            'message' => 'Notifikasi ditandai sebagai dibaca.',
+            'data' => new NotificationResource($notification->fresh()),
+        ]);
     }
 
-    public function markAllRead(Request $request)
+    /**
+     * PATCH /api/v1/notifications/read-all
+     */
+    public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+        $updated = Notification::forUser($request->user()->id)
+            ->unread()
+            ->update(['read_at' => now()]);
 
-        return $this->successResponse(null, ['message' => 'Semua notifikasi telah dibaca']);
+        return response()->json([
+            'message' => 'Semua notifikasi ditandai sebagai dibaca.',
+            'updated' => $updated,
+        ]);
     }
 
-    public function destroy(Request $request, DatabaseNotification $notification)
+    /**
+     * DELETE /api/v1/notifications/{id}
+     */
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $this->assertOwner($request->user(), $notification);
+        $notification = Notification::forUser($request->user()->id)->findOrFail($id);
         $notification->delete();
 
-        return $this->successResponse(null, ['message' => 'Notifikasi dihapus']);
-    }
-
-    private function assertOwner($user, DatabaseNotification $notification): void
-    {
-        abort_unless(
-            $notification->notifiable_type === $user->getMorphClass()
-            && $notification->notifiable_id === $user->getKey(),
-            404
-        );
-    }
-
-    private function transform(DatabaseNotification $notification): array
-    {
-        $data = $notification->data;
-
-        return [
-            'id' => $notification->id,
-            'type' => $notification->type,
-            'title' => $data['title'] ?? 'Notifikasi',
-            'body' => $data['body'] ?? null,
-            'data' => $data,
-            'read_at' => $notification->read_at?->toISOString(),
-            'created_at' => $notification->created_at?->toISOString(),
-        ];
+        return response()->json([
+            'message' => 'Notifikasi berhasil dihapus.',
+        ]);
     }
 }

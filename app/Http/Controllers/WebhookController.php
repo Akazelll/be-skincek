@@ -6,12 +6,11 @@ use App\Enums\SubscriptionStatus;
 use App\Mail\PaymentFailedMail;
 use App\Mail\PaymentSuccessMail;
 use App\Models\Subscription;
-use App\Notifications\AppNotification;
 use App\Services\MidtransService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 
 class WebhookController extends Controller
 {
@@ -90,12 +89,10 @@ class WebhookController extends Controller
 
         if ($changed) {
             if ($target === SubscriptionStatus::ACTIVE) {
-                Notification::send($subscription->user, new AppNotification(
-                    'Pembayaran berhasil',
-                    'Selamat, langganan SkinCek Pro kamu sudah aktif.',
-                    ['subscription_id' => $subscription->uuid],
-                    notificationType: 'subscription',
-                ));
+                app(NotificationService::class)->subscriptionActive(
+                    $subscription->user,
+                    $subscription->uuid,
+                );
 
                 Mail::to($subscription->user)->send(new PaymentSuccessMail($subscription->fresh(['user'])));
             } elseif ($target === SubscriptionStatus::CANCELLED || $target === SubscriptionStatus::EXPIRED) {

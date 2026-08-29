@@ -3,11 +3,12 @@
 namespace Tests\Feature;
 
 use App\Contracts\GoogleTokenVerifierContract;
+use App\Enums\NotificationCategory;
+use App\Enums\NotificationType;
+use App\Models\Notification;
 use App\Models\User;
-use App\Notifications\AppNotification;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -22,10 +23,8 @@ class RealtimeNotificationTest extends TestCase
         $this->seed(RoleSeeder::class);
     }
 
-    public function test_login_sends_welcome_notification(): void
+    public function test_login_creates_welcome_notification_in_db(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
 
         $this->postJson('/api/v1/login', [
@@ -33,17 +32,16 @@ class RealtimeNotificationTest extends TestCase
             'password' => 'password',
         ])->assertOk();
 
-        Notification::assertSentTo(
-            $user,
-            AppNotification::class,
-            fn (AppNotification $notification) => $notification->notificationType === 'welcome'
-        );
+        $notification = Notification::where('user_id', $user->id)->first();
+
+        $this->assertNotNull($notification);
+        $this->assertEquals(NotificationType::INFO, $notification->type);
+        $this->assertEquals(NotificationCategory::WELCOME, $notification->category);
+        $this->assertEquals('Selamat datang di SkinCek!', $notification->title);
     }
 
-    public function test_failed_login_does_not_send_welcome_notification(): void
+    public function test_failed_login_does_not_create_notification(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
 
         $this->postJson('/api/v1/login', [
@@ -51,13 +49,11 @@ class RealtimeNotificationTest extends TestCase
             'password' => 'wrong-password',
         ])->assertUnauthorized();
 
-        Notification::assertNothingSent();
+        $this->assertDatabaseCount('notifications', 0);
     }
 
-    public function test_google_login_sends_welcome_notification(): void
+    public function test_google_login_creates_welcome_notification(): void
     {
-        Notification::fake();
-
         $this->mockGoogleVerifier();
 
         $this->postJson('/api/v1/auth/google', [
@@ -67,17 +63,14 @@ class RealtimeNotificationTest extends TestCase
 
         $user = User::where('email', 'googleuser@gmail.com')->firstOrFail();
 
-        Notification::assertSentTo(
-            $user,
-            AppNotification::class,
-            fn (AppNotification $notification) => $notification->notificationType === 'welcome'
-        );
+        $notification = Notification::where('user_id', $user->id)->first();
+
+        $this->assertNotNull($notification);
+        $this->assertEquals(NotificationCategory::WELCOME, $notification->category);
     }
 
-    public function test_logout_sends_logout_notification(): void
+    public function test_logout_creates_logout_notification(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
@@ -85,17 +78,14 @@ class RealtimeNotificationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.message', 'Berhasil logout dari sesi ini');
 
-        Notification::assertSentTo(
-            $user,
-            AppNotification::class,
-            fn (AppNotification $notification) => $notification->notificationType === 'logout'
-        );
+        $notification = Notification::where('user_id', $user->id)->first();
+
+        $this->assertNotNull($notification);
+        $this->assertEquals(NotificationCategory::LOGOUT, $notification->category);
     }
 
-    public function test_logout_all_sends_logout_notification(): void
+    public function test_logout_all_creates_logout_notification(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
@@ -103,30 +93,48 @@ class RealtimeNotificationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.message', 'Berhasil logout dari semua perangkat');
 
-        Notification::assertSentTo(
-            $user,
-            AppNotification::class,
-            fn (AppNotification $notification) => $notification->notificationType === 'logout'
-        );
+        $notification = Notification::where('user_id', $user->id)->first();
+
+        $this->assertNotNull($notification);
+        $this->assertEquals(NotificationCategory::LOGOUT, $notification->category);
     }
 
-    public function test_notification_payload_contains_type_title_body_and_data(): void
+    public function test_notification_payload_structure(): void
     {
         $user = User::factory()->create();
 
-        $user->notify(new AppNotification(
-            'Hasil scan kamu sudah ready!',
-            'Prediksi acne dengan tingkat keyakinan 91%.',
-            ['prediction_id' => 'abc-123'],
-            notificationType: 'scan',
-        ));
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertOk();
 
-        $notification = $user->notifications()->first();
+        $notification = Notification::where('user_id', $user->id)->first();
 
-        $this->assertEquals('scan', $notification->data['notification_type']);
-        $this->assertEquals('Hasil scan kamu sudah ready!', $notification->data['title']);
-        $this->assertEquals('Prediksi acne dengan tingkat keyakinan 91%.', $notification->data['body']);
-        $this->assertEquals('abc-123', $notification->data['prediction_id']);
+        $this->assertNotNull($notification);
+        $this->assertNotNull($notification->id);
+        $this->assertNotNull($notification->type);
+        $this->assertNotNull($notification->category);
+        $this->assertNotNull($notification->title);
+        $this->assertNotNull($notification->message);
+        $this->assertNull($notification->read_at);
+        $this->assertNotNull($notification->created_at);
+    }
+
+    public function test_broadcast_event_is_dispatched(): void
+    {
+        $user = User::factory()->create();
+
+        $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertOk();
+
+        $notification = Notification::where('user_id', $user->id)->first();
+
+        $this->assertNotNull($notification);
+        $this->assertEquals(NotificationType::INFO, $notification->type);
+        $this->assertEquals(NotificationCategory::WELCOME, $notification->category);
+        $this->assertNotNull($notification->created_at);
     }
 
     private function mockGoogleVerifier(): void

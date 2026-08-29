@@ -12,13 +12,12 @@ use App\Models\Conversation;
 use App\Models\DoctorVerification;
 use App\Models\PredictionHistory;
 use App\Models\User;
-use App\Notifications\AppNotification;
+use App\Services\NotificationService;
 use App\Support\ImageExifStripper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 
 class ConversationController extends Controller
 {
@@ -165,12 +164,12 @@ class ConversationController extends Controller
         }
 
         $recipient = $isUserSender ? $conversation->doctor : $conversation->user;
-        Notification::send($recipient, new AppNotification(
-            'Pesan baru dari '.$user->full_name,
-            mb_strimwidth(strip_tags((string) ($finalContent ?? 'Foto')), 0, 120, '…'),
-            ['conversation_id' => $conversation->uuid],
-            notificationType: 'chat',
-        ));
+        app(NotificationService::class)->chatMessage(
+            $recipient,
+            $user->full_name,
+            (string) ($finalContent ?? 'Foto'),
+            $conversation->uuid,
+        );
 
         $this->notifyOfflineRecipient($recipient, $user, $conversation, $finalContent);
 

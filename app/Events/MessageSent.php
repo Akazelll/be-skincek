@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Enums\NotificationType;
 use App\Models\Message;
 use App\Support\MediaHelper;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -10,6 +9,11 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Event broadcast saat pesan chat dikirim.
+ * Channel: private conversation.{uuid}
+ * Event name: message.sent
+ */
 class MessageSent implements ShouldBroadcast
 {
     use Dispatchable;
@@ -26,7 +30,7 @@ class MessageSent implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return NotificationType::CHAT_MESSAGE_RECEIVED->value;
+        return 'message.sent';
     }
 
     public function broadcastWith(): array
@@ -35,8 +39,6 @@ class MessageSent implements ShouldBroadcast
         $media = $this->message->getFirstMedia('chat-media');
 
         return [
-            'type' => NotificationType::CHAT_MESSAGE_RECEIVED->value,
-            'category' => NotificationType::CHAT_MESSAGE_RECEIVED->category()->value,
             'conversation_uuid' => $this->message->conversation->uuid,
             'message' => [
                 'uuid' => $this->message->uuid,
