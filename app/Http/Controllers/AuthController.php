@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Contracts\GoogleTokenVerifierContract;
 use App\Enums\VerificationStatus;
 use App\Models\User;
+use App\Notifications\AppNotification;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
@@ -129,6 +131,8 @@ class AuthController extends Controller
 
         $token = $this->createSessionToken($user, $request);
 
+        $this->sendWelcomeNotification($user);
+
         return $this->successResponse([
             'user' => $user,
             'token' => $token,
@@ -197,24 +201,54 @@ class AuthController extends Controller
             return $this->errorResponse('Akun Google tidak dapat digunakan', 401);
         }
 
+        $token = $this->createSessionToken($user, $request);
+
+        $this->sendWelcomeNotification($user);
+
         return $this->successResponse([
             'user' => $user,
-            'token' => $this->createSessionToken($user, $request),
+            'token' => $token,
         ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        $user->currentAccessToken()->delete();
+
+        $this->sendLogoutNotification($user);
 
         return $this->successResponse(null, ['message' => 'Berhasil logout dari sesi ini']);
     }
 
     public function logoutAll(Request $request)
     {
-        $request->user()->tokens()->delete();
+        $user = $request->user();
+
+        $user->tokens()->delete();
+
+        $this->sendLogoutNotification($user);
 
         return $this->successResponse(null, ['message' => 'Berhasil logout dari semua perangkat']);
+    }
+
+    private function sendWelcomeNotification(User $user): void
+    {
+        Notification::send($user, new AppNotification(
+            'Selamat datang di SkinCek!',
+            "Halo {$user->full_name}, senang melihatmu kembali. Yuk, cek kondisi kulitmu hari ini!",
+            notificationType: 'welcome',
+        ));
+    }
+
+    private function sendLogoutNotification(User $user): void
+    {
+        Notification::send($user, new AppNotification(
+            'Kamu telah berhasil logout',
+            'Sesi kamu telah diakhiri dengan aman. Sampai jumpa lagi!',
+            notificationType: 'logout',
+        ));
     }
 
     private function createSessionToken(User $user, Request $request): string

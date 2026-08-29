@@ -203,6 +203,7 @@ class DoctorVerificationController extends Controller
                 VerificationStatus::NEEDS_REVISION => $doctorVerification->revision_note ?? 'Silakan perbaiki data verifikasi kamu.',
             },
             ['verification_status' => $status->value],
+            notificationType: 'verification',
         ));
 
         activity()

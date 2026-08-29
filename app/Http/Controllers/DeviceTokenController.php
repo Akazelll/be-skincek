@@ -10,6 +10,16 @@ use Illuminate\Validation\Rule;
 
 class DeviceTokenController extends Controller
 {
+    public function index(Request $request)
+    {
+        $tokens = $request->user()
+            ->deviceTokens()
+            ->latest()
+            ->paginate($this->perPage($request));
+
+        return DeviceTokenResource::collection($tokens);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

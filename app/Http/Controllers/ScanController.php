@@ -11,6 +11,7 @@ use App\Mail\ScanCompleteMail;
 use App\Models\PredictionFeedback;
 use App\Models\PredictionHistory;
 use App\Models\User;
+use App\Notifications\AppNotification;
 use App\Support\ImageExifStripper;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -144,6 +146,13 @@ class ScanController extends Controller
 
     private function notifyScanComplete(User $user, PredictionHistory $history): void
     {
+        Notification::send($user, new AppNotification(
+            'Hasil scan kamu sudah ready!',
+            "Prediksi {$history->predicted_class} dengan tingkat keyakinan ".round($history->confidence * 100).'%.',
+            ['prediction_id' => $history->uuid],
+            notificationType: 'scan',
+        ));
+
         $key = 'scan-email-sent:'.$user->id.':'.now()->toDateString();
 
         if (Cache::has($key)) {

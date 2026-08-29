@@ -58,6 +58,7 @@ class GenerateAiReply implements ShouldQueue
             'Balasan dari '.config('ai.bot_name'),
             mb_strimwidth(strip_tags($reply->answer), 0, 120, '…'),
             ['conversation_id' => $this->conversation->uuid],
+            notificationType: 'chat',
         ));
     }
 }

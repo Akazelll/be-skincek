@@ -14,6 +14,7 @@ class AppNotification extends Notification implements ShouldQueue
         public readonly string $title,
         public readonly ?string $body = null,
         public readonly array $data = [],
+        public readonly string $notificationType = 'general',
     ) {}
 
     public function via(object $notifiable): array
@@ -29,6 +30,7 @@ class AppNotification extends Notification implements ShouldQueue
         return [
             'title' => $this->title,
             'body' => $this->body,
+            'notification_type' => $this->notificationType,
             ...$this->data,
         ];
     }

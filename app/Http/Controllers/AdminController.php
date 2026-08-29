@@ -19,6 +19,36 @@ use Spatie\Activitylog\Models\Activity;
 
 class AdminController extends Controller
 {
+    public function profile(Request $request)
+    {
+        $user = $request->user()->load('roles');
+
+        $lastLogin = $user->tokens()->latest('created_at')->first();
+
+        return $this->successResponse([
+            'uuid' => $user->uuid,
+            'full_name' => $user->full_name,
+            'email' => $user->email,
+            'role' => $user->roles->first()?->name ?? 'admin',
+            'avatar_url' => $user->avatarUrl(),
+            'email_verified' => $user->hasVerifiedEmail(),
+            'account_created_at' => $user->created_at?->toISOString(),
+
+            'last_login' => [
+                'at' => $lastLogin?->created_at?->toISOString(),
+                'ip_address' => $lastLogin?->ip_address,
+                'user_agent' => $lastLogin?->user_agent,
+            ],
+            'active_sessions' => $user->tokens()->count(),
+
+            'summary' => [
+                'total_users' => User::role('user')->count(),
+                'total_doctors' => User::role('doctor')->where('ai_bot', false)->count(),
+                'pending_doctor_verifications' => DoctorVerification::where('verification_status', VerificationStatus::PENDING)->count(),
+            ],
+        ]);
+    }
+
     public function dashboard()
     {
         $activeSubs = Subscription::query()

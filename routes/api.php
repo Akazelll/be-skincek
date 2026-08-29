@@ -111,6 +111,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('/scans/{predictionHistory}', [ScanController::class, 'show']);
         Route::post('/scans/{predictionHistory}/feedback', [ScanController::class, 'feedback']);
 
+        Route::get('/device-tokens', [DeviceTokenController::class, 'index']);
         Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
         Route::delete('/device-tokens/{deviceToken}', [DeviceTokenController::class, 'destroy']);
 
@@ -129,6 +130,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         // Admin routes
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+            Route::get('/admin/profile', [AdminController::class, 'profile']);
             Route::get('/admin/users', [AdminController::class, 'listUsers']);
             Route::get('/admin/users/{user}', [AdminController::class, 'showUser']);
             Route::patch('/admin/users/{user}/role', [AdminController::class, 'assignRole']);

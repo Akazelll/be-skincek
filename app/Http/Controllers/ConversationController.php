@@ -169,6 +169,7 @@ class ConversationController extends Controller
             'Pesan baru dari '.$user->full_name,
             mb_strimwidth(strip_tags((string) ($finalContent ?? 'Foto')), 0, 120, '…'),
             ['conversation_id' => $conversation->uuid],
+            notificationType: 'chat',
         ));
 
         $this->notifyOfflineRecipient($recipient, $user, $conversation, $finalContent);

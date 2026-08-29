@@ -94,6 +94,7 @@ class WebhookController extends Controller
                     'Pembayaran berhasil',
                     'Selamat, langganan SkinCek Pro kamu sudah aktif.',
                     ['subscription_id' => $subscription->uuid],
+                    notificationType: 'subscription',
                 ));
 
                 Mail::to($subscription->user)->send(new PaymentSuccessMail($subscription->fresh(['user'])));
