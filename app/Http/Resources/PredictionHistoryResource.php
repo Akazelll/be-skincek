@@ -15,7 +15,6 @@ class PredictionHistoryResource extends JsonResource
         $concernThreshold = (float) config('services.ml.concern_description_threshold', 0.10);
 
         $skinConcern = $this->skinConcern;
-        $otherConcerns = $this->buildOtherConcerns($concernThreshold);
 
         return [
             'uuid' => $this->uuid,
@@ -34,12 +33,73 @@ class PredictionHistoryResource extends JsonResource
                 'name' => $skinConcern->name,
                 'description' => $skinConcern->description,
             ] : null,
-            'other_concerns' => $otherConcerns,
+            'other_concerns' => $this->buildOtherConcerns($concernThreshold),
+            'treatment_recommendations' => $this->buildTreatmentRecommendations($skinConcern),
+            'skincare_recommendations' => $this->buildSkincareRecommendations($skinConcern),
             'notice' => (float) $this->confidence < $threshold
                 ? 'Hasil prediksi ini memiliki tingkat keyakinan rendah. Sebaiknya lakukan scan ulang dengan pencahayaan yang lebih baik atau konsultasikan langsung dengan dokter kulit.'
                 : null,
             'created_at' => $this->created_at?->toISOString(),
         ];
+    }
+
+    /**
+     * Rekomendasi PERAWATAN = TIPS (tabel skin_recommendations).
+     * Bukan produk — untuk produk lihat buildSkincareRecommendations().
+     */
+    private function buildTreatmentRecommendations(?SkinConcern $skinConcern): array
+    {
+        if (! $skinConcern) {
+            return [];
+        }
+
+        $recommendations = $skinConcern->recommendations()
+            ->where('is_active', true)
+            ->get();
+
+        $priorityOrder = ['high' => 0, 'medium' => 1, 'low' => 2];
+
+        return $recommendations
+            ->sortBy(fn ($recommendation) => $priorityOrder[$recommendation->priority_level->value] ?? 3)
+            ->map(fn ($recommendation) => [
+                'uuid' => $recommendation->uuid,
+                'title' => $recommendation->title,
+                'recommendation_text' => $recommendation->recommendation_text,
+                'priority_level' => $recommendation->priority_level->value,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Rekomendasi SKINCARE = PRODUK (tabel skincare_products).
+     * Bukan tips — untuk tips lihat buildTreatmentRecommendations().
+     */
+    private function buildSkincareRecommendations(?SkinConcern $skinConcern): array
+    {
+        if (! $skinConcern) {
+            return [];
+        }
+
+        return $skinConcern->products()
+            ->where('is_active', true)
+            ->with(['doctor', 'skinType'])
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($product) => [
+                'uuid' => $product->uuid,
+                'name' => $product->name,
+                'category' => $product->category,
+                'gender' => $product->gender?->value ?? 'unisex',
+                'key_ingredients' => $product->key_ingredients,
+                'usage_instruction' => $product->usage_instruction,
+                'warning' => $product->warning,
+                'skin_type' => $product->skinType?->name,
+                'doctor' => $product->doctor?->full_name,
+            ])
+            ->values()
+            ->toArray();
     }
 
     private function buildOtherConcerns(float $threshold): array

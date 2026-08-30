@@ -6,6 +6,11 @@ use App\Contracts\SkinPredictionServiceContract;
 use App\Models\PredictionHistory;
 use App\Models\User;
 use App\Services\HttpSkinPredictionService;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\SkincareProductSeeder;
+use Database\Seeders\SkinConcernSeeder;
+use Database\Seeders\SkinRecommendationSeeder;
+use Database\Seeders\SkinTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -155,6 +160,62 @@ class ScanTest extends TestCase
         $this->assertDatabaseCount('prediction_histories', 0);
     }
 
+    public function test_scan_includes_treatment_and_skincare_recommendations(): void
+    {
+        $this->seedConcernContent();
+
+        $user = $this->makeUserWithProfile();
+        Sanctum::actingAs($user);
+        $this->fakePredictionService('inflammatory acne');
+
+        $response = $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated();
+
+        // PERAWATAN = tips (skin_recommendations)
+        $response->assertJsonCount(2, 'data.treatment_recommendations');
+        $response->assertJsonPath('data.treatment_recommendations.0.title', 'Konsultasikan Bila Peradangan Memburuk');
+        $response->assertJsonStructure([
+            'data' => [
+                'treatment_recommendations' => [
+                    ['uuid', 'title', 'recommendation_text', 'priority_level'],
+                ],
+                'skincare_recommendations' => [
+                    ['uuid', 'name', 'category', 'gender', 'key_ingredients', 'usage_instruction', 'warning', 'skin_type', 'doctor'],
+                ],
+            ],
+        ]);
+
+        // SKINCARE = produk (skincare_products)
+        $response->assertJsonCount(2, 'data.skincare_recommendations');
+        $response->assertJsonPath('data.skincare_recommendations.0.name', 'Cetaphil Gentle Skin Cleanser');
+    }
+
+    public function test_scan_unknown_class_returns_empty_recommendations(): void
+    {
+        $user = $this->makeUserWithProfile();
+        Sanctum::actingAs($user);
+        $this->fakePredictionService('unknown-class');
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated()
+            ->assertJsonCount(0, 'data.treatment_recommendations')
+            ->assertJsonCount(0, 'data.skincare_recommendations');
+    }
+
+    private function seedConcernContent(): void
+    {
+        $this->seed(RoleSeeder::class);
+        $this->seed(SkinConcernSeeder::class);
+        $this->seed(SkinTypeSeeder::class);
+
+        User::factory()->create(['email' => 'doctor@skincek.com'])->assignRole('doctor');
+
+        $this->seed(SkinRecommendationSeeder::class);
+        $this->seed(SkincareProductSeeder::class);
+    }
+
     private function makeUserWithProfile(): User
     {
         return User::factory()->create([
@@ -163,16 +224,18 @@ class ScanTest extends TestCase
         ]);
     }
 
-    private function fakePredictionService(): void
+    private function fakePredictionService(?string $predictedClass = null): void
     {
-        $this->app->instance(SkinPredictionServiceContract::class, new class implements SkinPredictionServiceContract
+        $this->app->instance(SkinPredictionServiceContract::class, new class($predictedClass) implements SkinPredictionServiceContract
         {
+            public function __construct(private ?string $predictedClass = null) {}
+
             public function predict(string $imagePath, bool $cropped = false, ?string $originalName = null): array
             {
                 return [
-                    'predicted_class' => 'acne',
+                    'predicted_class' => $this->predictedClass ?? 'acne',
                     'confidence' => 0.91,
-                    'probabilities' => ['acne' => 0.91],
+                    'probabilities' => [$this->predictedClass ?? 'acne' => 0.91],
                     'severity_score' => 0.73,
                     'severity_level' => 'high',
                     'model_used' => 'test-model',

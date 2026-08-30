@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             SkinTypeSeeder::class,
             UserSeeder::class,
             SkinRecommendationSeeder::class,
+            SkincareProductSeeder::class,
         ]);
     }
 }
