@@ -81,9 +81,14 @@ class PredictionHistoryResource extends JsonResource
             return [];
         }
 
+        $userGender = $this->user?->gender?->value;
+
         return $skinConcern->products()
             ->where('is_active', true)
             ->with(['doctor', 'skinType'])
+            ->when($userGender, fn ($query) => $query->where(function ($q) use ($userGender) {
+                $q->where('gender', 'unisex')->orWhere('gender', $userGender);
+            }))
             ->orderBy('created_at')
             ->orderBy('id')
             ->get()

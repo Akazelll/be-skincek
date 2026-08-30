@@ -45,7 +45,7 @@ class ScanController extends Controller
 
     public function index(Request $request)
     {
-        $histories = QueryBuilder::for($request->user()->predictionHistories()->with('media'))
+        $histories = QueryBuilder::for($request->user()->predictionHistories()->with(['media', 'user']))
             ->allowedFilters(
                 AllowedFilter::exact('scan_mode'),
                 AllowedFilter::exact('predicted_class'),
@@ -61,7 +61,7 @@ class ScanController extends Controller
     {
         abort_unless($predictionHistory->user_id === $request->user()->id, 404);
 
-        return new PredictionHistoryResource($predictionHistory);
+        return new PredictionHistoryResource($predictionHistory->load('user'));
     }
 
     private function assertEmailVerified(User $user): void
@@ -140,7 +140,7 @@ class ScanController extends Controller
 
         $this->notifyScanComplete($request->user(), $history);
 
-        return (new PredictionHistoryResource($history))->response()->setStatusCode(201);
+        return (new PredictionHistoryResource($history->load('user')))->response()->setStatusCode(201);
     }
 
     private function notifyScanComplete(User $user, PredictionHistory $history): void

@@ -204,6 +204,71 @@ class ScanTest extends TestCase
             ->assertJsonCount(0, 'data.skincare_recommendations');
     }
 
+    public function test_scan_skincare_recommendations_respect_user_gender(): void
+    {
+        $this->seedConcernContent();
+
+        // Concern 'wrinkles' punya 2 produk: Olay (perempuan) + L'Oreal (unisex)
+        $maleUser = User::factory()->create([
+            'date_of_birth' => '1995-05-15',
+            'gender' => 'laki_laki',
+        ]);
+        Sanctum::actingAs($maleUser);
+        $this->fakePredictionService('wrinkles');
+
+        $response = $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated();
+
+        // Laki-laki: hanya unisex, produk perempuan TIDAK muncul
+        $response->assertJsonCount(1, 'data.skincare_recommendations');
+        $response->assertJsonPath('data.skincare_recommendations.0.name', "L'Oreal Revitalift Filler Ampoule Serum");
+
+        $femaleUser = User::factory()->create([
+            'date_of_birth' => '1995-05-15',
+            'gender' => 'perempuan',
+        ]);
+        Sanctum::actingAs($femaleUser);
+
+        $response = $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated();
+
+        // Perempuan: produk perempuan + unisex (2 produk)
+        $response->assertJsonCount(2, 'data.skincare_recommendations');
+        $femaleProductNames = collect($response->json('data.skincare_recommendations'))->pluck('name');
+        $this->assertTrue($femaleProductNames->contains('Olay Regenerist Micro-Sculpting Retinol 24 Night Cream'));
+        $this->assertTrue($femaleProductNames->contains("L'Oreal Revitalift Filler Ampoule Serum"));
+    }
+
+    public function test_scan_skincare_recommendations_shows_all_genders_when_profile_missing(): void
+    {
+        $this->seedConcernContent();
+
+        // User tanpa gender (tidak mungkin untuk scan pertama, tapi user lama bisa)
+        $user = User::factory()->create([
+            'date_of_birth' => '1995-05-15',
+            'gender' => null,
+        ]);
+        $user->predictionHistories()->create([
+            'scan_mode' => 'upload',
+            'predicted_class' => 'wrinkles',
+            'confidence' => 0.9,
+            'probabilities' => ['wrinkles' => 0.9],
+            'severity_score' => 50,
+            'severity_level' => 'medium',
+            'model_used' => 'test',
+        ]);
+        Sanctum::actingAs($user);
+        $this->fakePredictionService('wrinkles');
+
+        // Gender null → tidak difilter, semua produk muncul
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated()
+            ->assertJsonCount(2, 'data.skincare_recommendations');
+    }
+
     private function seedConcernContent(): void
     {
         $this->seed(RoleSeeder::class);
