@@ -1,0 +1,592 @@
+{
+  "info": {
+    "_postman_id": "a3f8c1e2-9b4d-4e6a-8f2b-1c7d5e9a4b21",
+    "name": "SkinCek - Prediksi Terbaru (adamxraga@gmail.com)",
+    "description": "Alur lengkap testing fitur Prediksi (Scan AI) dengan user adamxraga@gmail.com (Pro Lifetime, email sudah verified, profil lengkap — TANPA perlu OTP & tanpa gate profil).\n\nMencakup output TERBARU hasil scan:\n- skin_concern (nama + deskripsi Bahasa Indonesia)\n- other_concerns (concern lain confidence > 10%)\n- treatment_recommendations (TIPS PERAWATAN — dari tabel skin_recommendations, urut high→medium→low)\n- skincare_recommendations (PRODUK SKINCARE — dari tabel skincare_products, dengan ingredients/cara pakai/warning/skin_type/nama dokter)\n- feedback akurasi + notifikasi scan\n\nPENTING:\n1. Jalankan: php artisan migrate:fresh --seed (user adamxraga@gmail.com / developer123 otomatis ter-seed dengan Pro Lifetime, hanya ada di APP_ENV local/staging)\n2. User ini skip: verifikasi email (sudah verified), gate profil (DOB+gender sudah lengkap), kuota scan (Pro unlimited)\n3. Isi file gambar wajah jelas di request B1, B2, C1, E1\n\nJalankan berurutan A1 → D3.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://be-skincek.test/api/v1" },
+    { "key": "email", "value": "adamxraga@gmail.com" },
+    { "key": "password", "value": "developer123" },
+    { "key": "token", "value": "" },
+    { "key": "scan_uuid", "value": "" },
+    { "key": "scan_image_url", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Login & Cek Status",
+      "description": "Login adamxraga (Pro) → pastikan email verified + profil lengkap + subscription Pro.",
+      "item": [
+        {
+          "name": "A1. Login (dapat token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login sukses (200)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Token tersimpan', () => {",
+                  "    pm.expect(json.data.token).to.be.a('string');",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "});",
+                  "pm.test('User adamxraga', () => pm.expect(json.data.user.email).to.eql('adamxraga@gmail.com'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "A2. Cek Profil (wajib: verified + lengkap + Pro)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profil (200)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Email sudah verified (skip OTP)', () => {",
+                  "    pm.expect(json.data.email_verified).to.eql(true);",
+                  "});",
+                  "pm.test('Profil sudah lengkap (skip gate DOB/gender)', () => {",
+                  "    pm.expect(json.data.profile_completed).to.eql(true);",
+                  "});",
+                  "pm.test('Subscription = Pro (unlimited scan)', () => {",
+                  "    pm.expect(json.data.subscription_status).to.eql('Pro');",
+                  "});",
+                  "console.log('subscription_status :', json.data.subscription_status);",
+                  "console.log('scan_count         :', json.data.scan_count);",
+                  "console.log('remaining_free_msg :', json.data.remaining_free_messages);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Scan (Output Terbaru: Rekomendasi Perawatan + Skincare)",
+      "description": "Scan upload & livecam. Verifikasi field TERBARU: treatment_recommendations (TIPS) + skincare_recommendations (PRODUK).",
+      "item": [
+        {
+          "name": "B1. Scan Upload (foto wajah jelas → 201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Scan upload berhasil (201)', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('scan_mode = upload', () => pm.expect(json.data.scan_mode).to.eql('upload'));",
+                  "pm.test('confidence 0-1', () => {",
+                  "    pm.expect(json.data.confidence).to.be.at.least(0);",
+                  "    pm.expect(json.data.confidence).to.be.at.most(1);",
+                  "});",
+                  "pm.test('severity_score 0-100', () => {",
+                  "    pm.expect(json.data.severity_score).to.be.at.least(0);",
+                  "    pm.expect(json.data.severity_score).to.be.at.most(100);",
+                  "});",
+                  "",
+                  "// === FIELD TERBARU: skin_concern ===",
+                  "pm.test('skin_concern punya name + description (ID)', () => {",
+                  "    pm.expect(json.data.skin_concern).to.be.an('object');",
+                  "    pm.expect(json.data.skin_concern.name).to.be.a('string');",
+                  "    pm.expect(json.data.skin_concern.description).to.be.a('string').and.to.have.length.greaterThan(0);",
+                  "});",
+                  "",
+                  "// === FIELD TERBARU: other_concerns ===",
+                  "pm.test('other_concerns adalah array', () => {",
+                  "    pm.expect(json.data.other_concerns).to.be.an('array');",
+                  "});",
+                  "",
+                  "// === FIELD TERBARU: treatment_recommendations (TIPS) ===",
+                  "pm.test('treatment_recommendations adalah array', () => {",
+                  "    pm.expect(json.data.treatment_recommendations).to.be.an('array');",
+                  "});",
+                  "if (json.data.treatment_recommendations.length > 0) {",
+                  "    pm.test('Tips punya struktur lengkap', () => {",
+                  "        const t = json.data.treatment_recommendations[0];",
+                  "        pm.expect(t.uuid).to.be.a('string');",
+                  "        pm.expect(t.title).to.be.a('string');",
+                  "        pm.expect(t.recommendation_text).to.be.a('string').and.to.have.length.greaterThan(0);",
+                  "        pm.expect(['low','medium','high']).to.include(t.priority_level);",
+                  "    });",
+                  "    pm.test('Tips urut high→medium→low', () => {",
+                  "        const order = { high: 0, medium: 1, low: 2 };",
+                  "        for (let i = 1; i < json.data.treatment_recommendations.length; i++) {",
+                  "            pm.expect(order[json.data.treatment_recommendations[i].priority_level])",
+                  "              .to.be.at.least(order[json.data.treatment_recommendations[i-1].priority_level]);",
+                  "        }",
+                  "    });",
+                  "}",
+                  "",
+                  "// === FIELD TERBARU: skincare_recommendations (PRODUK) ===",
+                  "pm.test('skincare_recommendations adalah array', () => {",
+                  "    pm.expect(json.data.skincare_recommendations).to.be.an('array');",
+                  "});",
+                  "if (json.data.skincare_recommendations.length > 0) {",
+                  "    pm.test('Produk punya struktur lengkap', () => {",
+                  "        const p = json.data.skincare_recommendations[0];",
+                  "        pm.expect(p.uuid).to.be.a('string');",
+                  "        pm.expect(p.name).to.be.a('string');",
+                  "        pm.expect(p.category).to.be.a('string');",
+                  "        pm.expect(['laki_laki','perempuan','unisex']).to.include(p.gender);",
+                  "        pm.expect(p.key_ingredients).to.be.a('string');",
+                  "        pm.expect(p.usage_instruction).to.be.a('string');",
+                  "        pm.expect(p.skin_type).to.be.a('string');",
+                  "        pm.expect(p.doctor).to.be.a('string');",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('disclaimer tampil', () => {",
+                  "    pm.expect(json.data.disclaimer).to.be.a('string').and.to.have.length.greaterThan(0);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('scan_uuid', json.data.uuid);",
+                  "pm.collectionVariables.set('scan_image_url', json.data.image_url);",
+                  "console.log('=== HASIL SCAN ===');",
+                  "console.log('predicted_class :', json.data.predicted_class);",
+                  "console.log('skin_concern    :', json.data.skin_concern?.name);",
+                  "console.log('confidence      :', json.data.confidence);",
+                  "console.log('severity        :', json.data.severity_score, '/', json.data.severity_level);",
+                  "console.log('other_concerns  :', json.data.other_concerns.length, 'items');",
+                  "console.log('=== TIPS PERAWATAN:', json.data.treatment_recommendations.length, 'items ===');",
+                  "json.data.treatment_recommendations.forEach(t => console.log(' -', '[' + t.priority_level + ']', t.title));",
+                  "console.log('=== PRODUK SKINCARE:', json.data.skincare_recommendations.length, 'items ===');",
+                  "json.data.skincare_recommendations.forEach(p => console.log(' -', p.name, '(' + p.category + ',', p.skin_type + ')'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans",
+              "host": ["{{base_url}}"],
+              "path": ["scans"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file", "src": [], "disabled": false }
+              ]
+            }
+          }
+        },
+        {
+          "name": "B2. Scan Livecam (foto ter-crop → 201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Scan livecam berhasil (201)', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('scan_mode = livecam', () => pm.expect(json.data.scan_mode).to.eql('livecam'));",
+                  "pm.test('Rekomendasi tetap muncul di livecam', () => {",
+                  "    pm.expect(json.data.treatment_recommendations).to.be.an('array');",
+                  "    pm.expect(json.data.skincare_recommendations).to.be.an('array');",
+                  "});",
+                  "console.log('predicted_class :', json.data.predicted_class);",
+                  "console.log('skin_concern    :', json.data.skin_concern?.name);",
+                  "console.log('tips            :', json.data.treatment_recommendations.length, 'items');",
+                  "console.log('produk         :', json.data.skincare_recommendations.length, 'items');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans/livecam",
+              "host": ["{{base_url}}"],
+              "path": ["scans", "livecam"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file", "src": [], "disabled": false }
+              ]
+            }
+          }
+        },
+        {
+          "name": "B3. Verifikasi Image URL (foto tersimpan)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Image URL dapat diakses (200)', () => pm.response.to.have.status(200));",
+                  "pm.test('Konten adalah gambar', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.match(/image\\//);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{scan_image_url}}",
+              "host": ["{{scan_image_url}}"]
+            }
+          }
+        },
+        {
+          "name": "B4. Feedback Akurasi (is_accurate)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Feedback tersimpan (200)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('is_accurate tercatat', () => pm.expect(json.data.is_accurate).to.eql(true));",
+                  "pm.test('Pesan terima kasih', () => {",
+                  "    pm.expect(json.meta.message).to.include('Terima kasih');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans/{{scan_uuid}}/feedback",
+              "host": ["{{base_url}}"],
+              "path": ["scans", "{{scan_uuid}}", "feedback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_accurate\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "B5. Feedback Idempotent (kirim ulang → tetap 200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Feedback ulang tetap 200 (idempotent)', () => pm.response.to.have.status(200));",
+                  "console.log('Feedback terakhir menimpa yang lama — tidak error.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans/{{scan_uuid}}/feedback",
+              "host": ["{{base_url}}"],
+              "path": ["scans", "{{scan_uuid}}", "feedback"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_accurate\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "B6. Notifikasi Scan (toast in-app muncul)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Notifikasi list (200)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "const scanNotifs = (json.data || []).filter(n => n.category === 'scan_complete');",
+                  "pm.test('Ada notifikasi scan_complete', () => {",
+                  "    pm.expect(scanNotifs.length).to.be.at.least(1);",
+                  "});",
+                  "if (scanNotifs.length > 0) {",
+                  "    const n = scanNotifs[0];",
+                  "    pm.test('Struktur notifikasi scan benar', () => {",
+                  "        pm.expect(n.type).to.eql('success');",
+                  "        pm.expect(n.title).to.include('scan');",
+                  "        pm.expect(n.action_url).to.include('/scan/history/');",
+                  "    });",
+                  "    console.log('Notifikasi scan terbaru:', n.title);",
+                  "}",
+                  "console.log('unread_count:', json.meta ? json.meta.unread_count : '-');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Skenario Error",
+      "description": "Error handling scan.",
+      "item": [
+        {
+          "name": "C1. Wajah Tidak Terdeteksi (foto non-wajah → 422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tolak 422 (wajah tidak terdeteksi)', () => pm.response.to.have.status(422));",
+                  "const json = pm.response.json();",
+                  "pm.test('Pesan berisi instruksi upload foto wajah', () => {",
+                  "    pm.expect(json.message).to.match(/wajah/i);",
+                  "});",
+                  "console.log('Pesan ML diteruskan:', json.message);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans",
+              "host": ["{{base_url}}"],
+              "path": ["scans"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "image", "type": "file", "src": [], "disabled": false }
+              ]
+            }
+          }
+        },
+        {
+          "name": "C2. Tanpa File Image (→ 422 validasi)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validasi image wajib (422)', () => pm.response.to.have.status(422));",
+                  "const json = pm.response.json();",
+                  "pm.test('Error field image', () => pm.expect(json.errors).to.have.property('image'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans",
+              "host": ["{{base_url}}"],
+              "path": ["scans"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Riwayat & Detail",
+      "description": "Riwayat scan, detail dengan SEMUA field terbaru, dan filter.",
+      "item": [
+        {
+          "name": "D1. Riwayat Scan (list)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Riwayat scan (200)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length > 0) {",
+                  "    pm.collectionVariables.set('scan_uuid', json.data[0].uuid);",
+                  "    console.log('Jumlah scan:', json.meta.total || json.data.length);",
+                  "} else {",
+                  "    console.log('Belum ada scan. Jalankan B1 dulu.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans?per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["scans"],
+              "query": [
+                { "key": "per_page", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "D2. Detail Scan (semua field terbaru)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Detail scan (200)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Format identik dengan response scan awal', () => {",
+                  "    pm.expect(json.data.uuid).to.eql(pm.collectionVariables.get('scan_uuid'));",
+                  "});",
+                  "pm.test('skin_concern tersedia', () => {",
+                  "    pm.expect(json.data.skin_concern).to.be.an('object');",
+                  "    pm.expect(json.data.skin_concern.name).to.be.a('string');",
+                  "});",
+                  "pm.test('treatment_recommendations (TIPS) tersedia', () => {",
+                  "    pm.expect(json.data.treatment_recommendations).to.be.an('array');",
+                  "});",
+                  "pm.test('skincare_recommendations (PRODUK) tersedia', () => {",
+                  "    pm.expect(json.data.skincare_recommendations).to.be.an('array');",
+                  "});",
+                  "console.log('=== DETAIL SCAN', json.data.uuid.substring(0,8) + '... ===');",
+                  "console.log('skin_concern  :', json.data.skin_concern?.name);",
+                  "console.log('other_concerns:', json.data.other_concerns.length, 'items');",
+                  "console.log('tips          :', json.data.treatment_recommendations.length, 'items');",
+                  "console.log('produk        :', json.data.skincare_recommendations.length, 'items');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans/{{scan_uuid}}",
+              "host": ["{{base_url}}"],
+              "path": ["scans", "{{scan_uuid}}"]
+            }
+          }
+        },
+        {
+          "name": "D3. Riwayat Filter scan_mode=upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Filter riwayat (200)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Semua hasil scan_mode=upload', () => {",
+                  "    json.data.forEach(s => pm.expect(s.scan_mode).to.eql('upload'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/scans?filter[scan_mode]=upload",
+              "host": ["{{base_url}}"],
+              "path": ["scans"],
+              "query": [
+                { "key": "filter[scan_mode]", "value": "upload" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
