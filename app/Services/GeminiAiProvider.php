@@ -44,10 +44,21 @@ class GeminiAiProvider implements AiChatServiceContract
 
         $response->throw();
 
-        $text = data_get($response->json(), 'candidates.0.content.parts.0.text');
+        $json = $response->json();
+        $text = data_get($json, 'candidates.0.content.parts.0.text');
 
         if (! is_string($text) || trim($text) === '') {
             throw new RuntimeException('Balasan Gemini kosong.');
+        }
+
+        // Deteksi jawaban terpotong karena limit token — log agar tidak terjadi diam-diam.
+        $finishReason = (string) data_get($json, 'candidates.0.finishReason');
+        if ($finishReason === 'MAX_TOKENS') {
+            \Log::warning('Gemini reply terpotong (MAX_TOKENS)', [
+                'model' => $model,
+                'max_output_tokens' => (int) config('ai.gemini.max_output_tokens'),
+                'answer_length' => strlen($text),
+            ]);
         }
 
         return new AiReply(trim($text), 'gemini');
