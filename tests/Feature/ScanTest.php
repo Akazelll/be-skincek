@@ -62,12 +62,90 @@ class ScanTest extends TestCase
 
         $history = PredictionHistory::firstOrFail();
 
+        // Livecam menyimpan gambar request langsung ke collection scan-photo-cropped
+        $this->assertNotNull($history->getFirstMedia('scan-photo-cropped'));
+        $this->assertNull($history->getFirstMedia('scan-photo'));
+
         $this->getJson('/api/v1/scans?filter[scan_mode]=livecam')
             ->assertOk()
             ->assertJsonCount(1, 'data');
 
         Sanctum::actingAs(User::factory()->create());
         $this->getJson("/api/v1/scans/{$history->uuid}")->assertNotFound();
+    }
+
+    public function test_upload_scan_with_face_crop_saves_yolo_crop(): void
+    {
+        $user = $this->makeUserWithProfile();
+        Sanctum::actingAs($user);
+
+        // Mock ML mengembalikan face_crop base64 (JPEG valid) seperti main.py v2.1.0
+        $jpegBase64 = base64_encode(
+            (string) file_get_contents(__DIR__.'/fixtures/face-crop.jpg')
+        );
+        $this->fakePredictionService('inflammatory acne', [
+            'face_crop' => $jpegBase64,
+            'face_crop_format' => 'jpeg',
+            'face_detected' => true,
+        ]);
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated();
+
+        $history = PredictionHistory::firstOrFail();
+
+        // Face crop dari ML tersimpan ke scan-photo, BUKAN gambar asli dari request
+        $media = $history->getFirstMedia('scan-photo');
+        $this->assertNotNull($media);
+        $this->assertEquals('face_crop.jpg', $media->file_name);
+        $this->assertEquals('yolo_face_crop', $media->getCustomProperty('source'));
+
+        // face_crop base64 tidak bocor ke raw_response
+        $this->assertArrayNotHasKey('face_crop', $history->raw_response);
+    }
+
+    public function test_upload_scan_without_face_crop_falls_back_to_original_image(): void
+    {
+        $user = $this->makeUserWithProfile();
+        Sanctum::actingAs($user);
+
+        // Mock ML TANPA face_crop (wajah tidak terdeteksi / versi lama)
+        $this->fakePredictionService('inflammatory acne');
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated();
+
+        $history = PredictionHistory::firstOrFail();
+
+        // Fallback: gambar asli tersimpan
+        $media = $history->getFirstMedia('scan-photo');
+        $this->assertNotNull($media);
+        $this->assertNotEquals('face_crop.jpg', $media->file_name);
+    }
+
+    public function test_upload_scan_with_invalid_base64_face_crop_falls_back(): void
+    {
+        $user = $this->makeUserWithProfile();
+        Sanctum::actingAs($user);
+
+        // base64 invalid → base64_decode strict mengembalikan false → fallback gambar asli
+        $this->fakePredictionService('inflammatory acne', [
+            'face_crop' => '!!!bukan-base64-valid!!!',
+            'face_crop_format' => 'jpeg',
+            'face_detected' => true,
+        ]);
+
+        $this->postJson('/api/v1/scans', [
+            'image' => UploadedFile::fake()->image('face.jpg'),
+        ])->assertCreated();
+
+        $history = PredictionHistory::firstOrFail();
+
+        $media = $history->getFirstMedia('scan-photo');
+        $this->assertNotNull($media);
+        $this->assertNotEquals('face_crop.jpg', $media->file_name);
     }
 
     public function test_user_without_profile_cannot_scan_for_first_time(): void
@@ -289,22 +367,25 @@ class ScanTest extends TestCase
         ]);
     }
 
-    private function fakePredictionService(?string $predictedClass = null): void
+    private function fakePredictionService(?string $predictedClass = null, array $extraFields = []): void
     {
-        $this->app->instance(SkinPredictionServiceContract::class, new class($predictedClass) implements SkinPredictionServiceContract
+        $this->app->instance(SkinPredictionServiceContract::class, new class($predictedClass, $extraFields) implements SkinPredictionServiceContract
         {
-            public function __construct(private ?string $predictedClass = null) {}
+            public function __construct(
+                private ?string $predictedClass = null,
+                private array $extraFields = [],
+            ) {}
 
             public function predict(string $imagePath, bool $cropped = false, ?string $originalName = null): array
             {
-                return [
+                return array_merge([
                     'predicted_class' => $this->predictedClass ?? 'acne',
                     'confidence' => 0.91,
                     'probabilities' => [$this->predictedClass ?? 'acne' => 0.91],
                     'severity_score' => 0.73,
                     'severity_level' => 'high',
                     'model_used' => 'test-model',
-                ];
+                ], $this->extraFields);
             }
         });
     }

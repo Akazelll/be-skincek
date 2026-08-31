@@ -120,7 +120,13 @@ class ScanController extends Controller
             'model_used' => ['required', 'string'],
         ])->validate();
 
-        $history = DB::transaction(function () use ($request, $result, $mode) {
+        // face_crop (base64) tidak disimpan ke raw_response — hanya dipakai untuk media.
+        $faceCrop = $result['face_crop'] ?? null;
+        $faceCropFormat = $result['face_crop_format'] ?? 'jpeg';
+        $faceDetected = $result['face_detected'] ?? false;
+        unset($result['face_crop']);
+
+        $history = DB::transaction(function () use ($request, $result, $mode, $faceCrop, $faceCropFormat, $faceDetected) {
             $history = $request->user()->predictionHistories()->create([
                 'scan_mode' => $mode,
                 'predicted_class' => $result['predicted_class'],
@@ -132,8 +138,40 @@ class ScanController extends Controller
                 'raw_response' => $result,
             ]);
 
-            $collection = $mode === ScanMode::LIVECAM ? 'scan-photo-cropped' : 'scan-photo';
-            $history->addMedia(ImageExifStripper::strip($request->file('image')))->toMediaCollection($collection);
+            if ($mode === ScanMode::LIVECAM) {
+                // Livecam sudah mengirim gambar ROI/crop — langsung simpan dari request.
+                $history->addMedia(
+                    ImageExifStripper::strip($request->file('image'))
+                )->toMediaCollection('scan-photo-cropped');
+
+                return $history;
+            }
+
+            // Mode UPLOAD: ML melakukan YOLO face detection dan mengembalikan hasil crop (base64).
+            if ($faceDetected && ! empty($faceCrop)) {
+                $faceCropBinary = base64_decode($faceCrop, true);
+
+                if ($faceCropBinary !== false) {
+                    $extension = $faceCropFormat === 'png' ? 'png' : 'jpg';
+                    $tempPath = tempnam(sys_get_temp_dir(), 'face_crop_');
+
+                    file_put_contents($tempPath, $faceCropBinary);
+
+                    $history->addMedia($tempPath)
+                        ->usingFileName('face_crop.'.$extension)
+                        ->withCustomProperties(['source' => 'yolo_face_crop'])
+                        ->toMediaCollection('scan-photo');
+
+                    @unlink($tempPath);
+
+                    return $history;
+                }
+            }
+
+            // Fallback: wajah tidak terdeteksi / face_crop kosong / base64 invalid — simpan gambar asli.
+            $history->addMedia(
+                ImageExifStripper::strip($request->file('image'))
+            )->toMediaCollection('scan-photo');
 
             return $history;
         });
