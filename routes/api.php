@@ -133,7 +133,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
             Route::get('/admin/profile', [AdminController::class, 'profile']);
             Route::get('/admin/users', [AdminController::class, 'listUsers']);
+            Route::post('/admin/users', [AdminController::class, 'createUser']);
             Route::get('/admin/users/{user}', [AdminController::class, 'showUser']);
+            Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser']);
+            Route::delete('/admin/users/{user}', [AdminController::class, 'destroyUser']);
             Route::patch('/admin/users/{user}/role', [AdminController::class, 'assignRole']);
             Route::patch('/admin/users/{user}/toggle-active', [AdminController::class, 'toggleActive']);
             Route::get('/admin/activity-log', [AdminController::class, 'activityLog']);

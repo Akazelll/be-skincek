@@ -160,7 +160,11 @@ class NotificationService
         ]);
 
         // Broadcast ke Reverb (synchronous — ShouldBroadcastNow, tanpa queue)
-        event(new NotificationSent($notification));
+        try {
+            event(new NotificationSent($notification));
+        } catch (\Throwable $e) {
+            \Log::warning('Broadcast notification failed: ' . $e->getMessage());
+        }
 
         return $notification;
     }

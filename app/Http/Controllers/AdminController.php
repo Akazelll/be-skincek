@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Spatie\Activitylog\Models\Activity;
 
@@ -179,5 +180,99 @@ class AdminController extends Controller
             ->paginate($this->perPage($request));
 
         return ActivityLogResource::collection($activities);
+    }
+
+    public function createUser(Request $request)
+    {
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->whereNull('deleted_at')],
+            'password' => ['required', 'string', 'min:8'],
+            'role' => ['required', Rule::in(['admin', 'doctor', 'user'])],
+            'is_active' => ['sometimes', 'boolean'],
+            'gender' => ['sometimes', 'nullable', 'string', 'in:laki_laki,perempuan'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today'],
+        ]);
+
+        $user = User::create([
+            'full_name' => $validated['full_name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'is_active' => $validated['is_active'] ?? true,
+            'privacy_consent_at' => now(),
+            'gender' => $validated['gender'] ?? null,
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+        ]);
+
+        $user->assignRole($validated['role']);
+
+        activity()
+            ->useLog('user_management')
+            ->performedOn($user)
+            ->causedBy($request->user())
+            ->withProperties(['role' => $validated['role']])
+            ->log('User created');
+
+        return $this->successResponse(new UserResource($user->load('roles')), [
+            'message' => 'User berhasil dibuat',
+        ], 201);
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'full_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)->whereNull('deleted_at')],
+            'password' => ['sometimes', 'required', 'string', 'min:8'],
+            'is_active' => ['sometimes', 'boolean'],
+            'gender' => ['sometimes', 'nullable', 'string', 'in:laki_laki,perempuan'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today'],
+        ]);
+
+        $user->fill([
+            'full_name' => $validated['full_name'] ?? $user->full_name,
+            'email' => $validated['email'] ?? $user->email,
+            'is_active' => $validated['is_active'] ?? $user->is_active,
+            'gender' => array_key_exists('gender', $validated) ? $validated['gender'] : $user->gender,
+            'date_of_birth' => array_key_exists('date_of_birth', $validated) ? $validated['date_of_birth'] : $user->date_of_birth,
+        ]);
+
+        if (isset($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        activity()
+            ->useLog('user_management')
+            ->performedOn($user)
+            ->causedBy($request->user())
+            ->withProperties(['updated_fields' => array_keys($validated)])
+            ->log('User updated');
+
+        return $this->successResponse(new UserResource($user->load('roles')), [
+            'message' => 'User berhasil diperbarui',
+        ]);
+    }
+
+    public function destroyUser(Request $request, User $user)
+    {
+        abort_if($user->is($request->user()), 422, 'Tidak dapat menghapus akun sendiri');
+
+        $userName = $user->full_name;
+        $userRole = $user->roles->first()?->name;
+        $user->tokens()->delete();
+        $user->delete();
+
+        activity()
+            ->useLog('user_management')
+            ->performedOn($user)
+            ->causedBy($request->user())
+            ->withProperties(['full_name' => $userName, 'role' => $userRole])
+            ->log('User deleted');
+
+        return $this->successResponse(null, [
+            'message' => "User {$userName} berhasil dihapus",
+        ]);
     }
 }

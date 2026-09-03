@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -90,5 +91,129 @@ class AdminRoleTest extends TestCase
 
         $this->patchJson("/api/v1/admin/users/{$user->uuid}/role", ['role' => 'superadmin'])
             ->assertUnprocessable();
+    }
+
+    public function test_admin_can_create_user(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Sanctum::actingAs($admin);
+
+        $payload = [
+            'full_name' => 'Budi Santoso',
+            'email' => 'budi@example.com',
+            'password' => 'password123',
+            'role' => 'user',
+        ];
+
+        $this->postJson('/api/v1/admin/users', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.full_name', 'Budi Santoso')
+            ->assertJsonPath('data.role', 'user');
+
+        $user = User::where('email', 'budi@example.com')->first();
+        $this->assertTrue($user->hasRole('user'));
+        $this->assertTrue(Hash::check('password123', $user->password));
+    }
+
+    public function test_admin_create_user_rejects_duplicate_email(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $existing = User::factory()->create();
+
+        Sanctum::actingAs($admin);
+
+        $this->postJson('/api/v1/admin/users', [
+            'full_name' => 'Duplikat',
+            'email' => $existing->email,
+            'password' => 'password123',
+            'role' => 'user',
+        ])->assertUnprocessable();
+    }
+
+    public function test_admin_can_update_user(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $user = User::factory()->create(['full_name' => 'Lama']);
+        $user->assignRole('user');
+
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/v1/admin/users/{$user->uuid}", [
+            'full_name' => 'Nama Baru',
+            'password' => 'newpassword123',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.full_name', 'Nama Baru');
+
+        $user = $user->fresh();
+        $this->assertSame('Nama Baru', $user->full_name);
+        $this->assertTrue(Hash::check('newpassword123', $user->password));
+    }
+
+    public function test_admin_update_user_email_must_be_unique(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        Sanctum::actingAs($admin);
+
+        $this->patchJson("/api/v1/admin/users/{$user->uuid}", [
+            'email' => $other->email,
+        ])->assertUnprocessable();
+    }
+
+    public function test_admin_can_delete_user(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        Sanctum::actingAs($admin);
+
+        $this->deleteJson("/api/v1/admin/users/{$user->uuid}")
+            ->assertOk()
+            ->assertJsonPath('meta.message', 'User '.$user->full_name.' berhasil dihapus');
+
+        $this->assertSoftDeleted($user);
+    }
+
+    public function test_admin_cannot_delete_self(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Sanctum::actingAs($admin);
+
+        $this->deleteJson("/api/v1/admin/users/{$admin->uuid}")
+            ->assertStatus(422);
+    }
+
+    public function test_non_admin_cannot_create_or_update_or_delete_user(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $target = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/admin/users', [
+            'full_name' => 'Hacker',
+            'email' => 'hacker@example.com',
+            'password' => 'password123',
+            'role' => 'admin',
+        ])->assertForbidden();
+
+        $this->patchJson("/api/v1/admin/users/{$target->uuid}", ['full_name' => 'Hacked'])
+            ->assertForbidden();
+
+        $this->deleteJson("/api/v1/admin/users/{$target->uuid}")
+            ->assertForbidden();
     }
 }
