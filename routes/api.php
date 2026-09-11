@@ -103,6 +103,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         Route::get('/subscriptions', [SubscriptionController::class, 'index']);
         Route::post('/subscriptions/checkout', [SubscriptionController::class, 'checkout']);
+        Route::post('/subscriptions/{subscription}/pay', [SubscriptionController::class, 'pay']);
         Route::get('/subscriptions/{subscription}/receipt', [SubscriptionController::class, 'receipt']);
         Route::post('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
 

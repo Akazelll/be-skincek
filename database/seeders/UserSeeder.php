@@ -23,6 +23,7 @@ class UserSeeder extends Seeder
             'full_name' => 'Admin',
             'email' => 'admin@skincek.com',
             'password' => Hash::make('password123'),
+            'email_verified_at' => now(),
             'privacy_consent_at' => now(),
             'is_active' => true,
         ]);
@@ -33,6 +34,7 @@ class UserSeeder extends Seeder
             'full_name' => 'dr. Example',
             'email' => 'doctor@skincek.com',
             'password' => Hash::make('password123'),
+            'email_verified_at' => now(),
             'privacy_consent_at' => now(),
             'is_active' => true,
         ]);

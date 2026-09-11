@@ -9,9 +9,9 @@ abstract class Controller
 {
     use ApiResponse;
 
-    protected const ALLOWED_PER_PAGE = [5, 10, 20, 50];
+    protected const ALLOWED_PER_PAGE = [10, 20, 50];
 
-    protected const DEFAULT_PER_PAGE = 5;
+    protected const DEFAULT_PER_PAGE = 10;
 
     protected function perPage(Request $request): int
     {
