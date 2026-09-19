@@ -121,6 +121,16 @@ class SubscriptionController extends Controller
             return $this->errorResponse('Transaksi ini tidak dapat dilanjutkan', 422);
         }
 
+        $expiryMinutes = (int) config('services.midtrans.expiry_duration', 1440);
+
+        // Pending yang sudah lewat batas expiry tidak bisa dilanjutkan lagi —
+        // tandai expired supaya user bisa membuat transaksi baru.
+        if ($subscription->created_at->lte(now()->subMinutes($expiryMinutes))) {
+            $subscription->update(['status' => SubscriptionStatus::EXPIRED]);
+
+            return $this->errorResponse('Batas waktu pembayaran telah lewat. Silakan buat pembayaran baru.', 422);
+        }
+
         try {
             $response = $midtrans->createSnapTransaction([
                 'transaction_details' => [
@@ -136,6 +146,14 @@ class SubscriptionController extends Controller
                 'customer_details' => [
                     'first_name' => $request->user()->full_name,
                     'email' => $request->user()->email,
+                ],
+                // Anchor expiry ke waktu transaksi DIBUAT, bukan ke "now" —
+                // tanpa ini, Midtrans memberi window expiry baru (reset 24 jam)
+                // setiap kali token di-generate ulang.
+                'expiry' => [
+                    'start_time' => $subscription->created_at->format('Y-m-d H:i:s O'),
+                    'unit' => 'minutes',
+                    'duration' => $expiryMinutes,
                 ],
             ]);
         } catch (Throwable $e) {
