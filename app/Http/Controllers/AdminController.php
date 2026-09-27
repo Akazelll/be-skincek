@@ -139,6 +139,14 @@ class AdminController extends Controller
             ->when($request->input('role'), function ($query, $role) {
                 $query->role($role);
             })
+            ->when($request->filled('search'), function ($query) use ($request) {
+                // escape '!' first; portable (SQLite punya default backslash escape, MySQL tidak)
+                $term = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], trim((string) $request->input('search'))).'%';
+                $query->where(function ($q) use ($term) {
+                    $q->whereRaw("full_name LIKE ? ESCAPE '!'", [$term])
+                        ->orWhereRaw("email LIKE ? ESCAPE '!'", [$term]);
+                });
+            })
             ->latest()
             ->paginate($this->perPage($request));
 

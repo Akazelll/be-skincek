@@ -33,6 +33,56 @@ class AdminRoleTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
+    public function test_admin_users_can_be_searched_by_name_or_email(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        User::factory()->create(['full_name' => 'Andi Wijaya', 'email' => 'andi@example.com'])->assignRole('user');
+        User::factory()->create(['full_name' => 'Budi', 'email' => 'budi@example.com'])->assignRole('user');
+
+        Sanctum::actingAs($admin);
+
+        $this->getJson('/api/v1/admin/users?search=Andi')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.full_name', 'Andi Wijaya');
+
+        $this->getJson('/api/v1/admin/users?search=budi@')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.full_name', 'Budi');
+    }
+
+    public function test_admin_users_search_combines_with_role_filter(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        User::factory()->create(['full_name' => 'Andi Wijaya'])->assignRole('user');
+        User::factory()->create(['full_name' => 'Andi Dokter'])->assignRole('doctor');
+
+        Sanctum::actingAs($admin);
+
+        $this->getJson('/api/v1/admin/users?role=user&search=Andi')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.full_name', 'Andi Wijaya');
+    }
+
+    public function test_admin_users_search_escapes_like_wildcards(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        User::factory()->create(['full_name' => 'Andi Wijaya'])->assignRole('user');
+        User::factory()->create(['full_name' => 'X%Y'])->assignRole('user');
+
+        Sanctum::actingAs($admin);
+
+        $this->getJson('/api/v1/admin/users?search=%25')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.full_name', 'X%Y');
+    }
+
     public function test_admin_can_assign_role(): void
     {
         $admin = User::factory()->create();
